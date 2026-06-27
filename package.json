@@ -9,7 +9,8 @@
     "lint": "next lint",
     "generate-wallets": "node --experimental-transform-types --no-warnings scripts/generate-wallets.mts",
     "fund-gateway": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/fund-gateway.mts",
-    "settle-smoke": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/settle-smoke.mts"
+    "settle-smoke": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/settle-smoke.mts",
+    "seed": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/seed.mts"
   },
   "dependencies": {
     "@circle-fin/developer-controlled-wallets": "^10.7.1",

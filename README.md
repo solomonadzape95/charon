@@ -1,83 +1,101 @@
-# ⲭ Charon
+# Charon
 
-**Tip any creator on the internet, instantly — even if they've never signed up.**
+### Read freely. Pay for what it's worth. Creators earn every chapter.
 
-Paste any URL in Telegram. Charon's agent identifies the creator, finds their
-wallet across ENS / Mirror / GitHub / Farcaster, sizes a fair tip from the
-content's depth, and routes a USDC nanopayment — settled in under 500ms on Arc.
-If the creator has no wallet, Charon holds the funds in escrow and emails them a
-claim link. The creator comes to you.
+A nanopayment reading platform where AI agents settle what every chapter was truly
+worth. Readers deposit USDC once and read webnovels and manga with no paywalls;
+after each session a reading-intelligence agent values the session by genuine
+engagement and settles a fair nanopayment to the creator on **Arc** via **x402**.
 
-> Lepton Agents Hackathon · Canteen × Circle × Arc · Track RFB-06
+> *Charon — the ferryman took one coin per crossing. Every chapter is a crossing. The coin is automatic.*
 
-## How it works
+Built for the Lepton Agents Hackathon (Canteen × Circle × Arc) ·
+RFB 06 Creator Monetization + RFB 01 Autonomous Paying Agents.
 
-1. **Top up once** — deposit USDC into your Charon balance (prepaid, like Uber).
-   Funds sit in a pooled Arc treasury; tips debit a ledger silently.
-2. **Send a URL** — `/tip <url> [amount] [comment]` in Telegram. The agent runs a
-   multi-step loop: fetch → identify creator → search wallets → score confidence
-   → estimate value → propose. You confirm with one tap.
-3. **The creator gets paid** — confidence ≥95% with a known wallet → routed
-   directly on Arc. Otherwise → held in escrow (a Circle Programmable Wallet is
-   provisioned for them) + a claim email is sent.
+---
+
+## The four agents
+
+| Agent | Fires | What it does |
+|---|---|---|
+| **1 · Reading Intelligence** (`lib/agents/reading.ts`) | after every session | Scores engagement (time vs expected read, completion, scroll-back re-reads, binge depth, loyalty, reader comment), reasons a fair value, and settles USDC to the creator. |
+| **2 · Creator Pricing** (`lib/agents/pricing.ts`) | on chapter upload | Sets a base price from word count, genre benchmarks, series following + momentum. Creator can override. |
+| **3 · Dynamic Repricing** (`lib/agents/repricing.ts`) | hourly cron | Adjusts each chapter's price from demand, time decay, momentum, completion + re-read signals — capped at ±20%/day, never below floor. |
+| **4 · Budget Allocation** (`lib/agents/budget.ts`) | reader dashboard + daily cron | Tracks reading pace, warns on low balance, suggests a calibrated top-up, and flags series where pre-release mode fits. |
+
+Every agent makes a single structured-JSON decision (Claude via OpenRouter) over
+deterministically-gathered signals, with a deterministic fallback so the loop
+always completes. **All money math is enforced in code** (`lib/pricing.ts`) — the
+model only chooses direction, magnitude, and the one-sentence reasoning shown in
+the UI.
+
+## Payment modes
+
+1. **Post-reading settlement** (default) — read first, the agent settles fair value after.
+2. **Pre-release** — subscribers are auto-charged and unlocked the instant a chapter drops.
+3. **Series unlock** — one discounted payment unlocks a completed series; sessions stop charging.
 
 ## Architecture
 
-| Concern | Implementation |
-|---|---|
-| Agent | OpenRouter (default `qwen/qwen3-next-80b-a3b-instruct:free`) — `lib/agent.ts` |
-| Identity | ENS (viem), Mirror (on-chain), GitHub, Farcaster — `lib/identity.ts` |
-| Reader balance | Supabase ledger over a pooled Arc treasury — `lib/payments.ts` |
-| Settlement | x402 + Arc via Circle's batching Facilitator — `lib/arc.ts`, `lib/payer.ts`, `app/api/settle` |
-| Creator escrow | Circle Programmable Wallets (guarded; ledger-only fallback) — `lib/circle.ts` |
-| Bot | grammY, webhook on Vercel / long-poll locally — `lib/telegram.ts` |
-| Claim emails | Resend (digest model; no-op without a key) — `lib/email.ts` |
-| Frontend | Next.js 16 App Router + Tailwind 4 |
-
-The hybrid wallet model: **reader balances are a ledger over the Arc treasury**
-(reuses the proven x402 rail); **creator escrow uses real Circle Programmable
-Wallets** so the claim/withdraw flow is authentically Circle. Both rails are
-testnet — the app ledger is the source of truth for amounts owed.
-
-## Setup
-
-1. **Install**
-   ```bash
-   npm install
-   cp .env.example .env.local   # then fill in the keys below
-   ```
-
-2. **Apply the database schema** — open the Supabase SQL editor and run
-   [`supabase/schema.sql`](supabase/schema.sql). (This DROPs the v1 tables.)
-
-3. **Keys** (`.env.local`):
-   - `OPENROUTER_API_KEY` — the agent (`OPENROUTER_MODEL` defaults to a free model).
-   - `TELEGRAM_BOT_TOKEN` + `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` — from @BotFather.
-   - `TREASURY_WALLET_PK/ADDRESS` — pooled treasury. `npm run generate-wallets`,
-     then fund the address at https://faucet.circle.com (Arc Testnet) and
-     `npm run fund-gateway`.
-   - *Optional:* `CIRCLE_API_KEY` / `CIRCLE_ENTITY_SECRET` / `CIRCLE_WALLET_SET_ID`
-     (enables real Programmable-Wallet escrow; ledger-only escrow without them),
-     `RESEND_API_KEY` (claim emails), `GITHUB_TOKEN`, `NEYNAR_API_KEY`.
-
-4. **Run**
-   ```bash
-   npm run dev          # web app
-   npm run bot          # Telegram bot (long polling, local dev)
-   ```
-   For production: deploy to Vercel, then `NEXT_PUBLIC_BASE_URL=https://you.app npm run set-webhook`.
-
-## Verify
-
-```bash
-npm run spike        # proves the Arc settlement rail end-to-end
-npm run agent-test   # runs the tipping agent on a Mirror + a blog URL (proposal only)
+```
+Reader ──reads──▶ Chapter UI ──tracks──▶ /api/session/end
+   │                (time, scroll, re-reads, binge)     │
+   │                                                     ▼
+   │                                        Agent 1 (Reading Intelligence)
+   │                                                     │ fair amount + reasoning
+   ▼                                                     ▼
+ ledger (Supabase) ◀── debit ──────────────  settleSession()  ── x402 ──▶ /api/settle
+                                                     │                  (treasury pays)
+                                                     ▼                        │
+                                          payments + loyalty           Arc testnet ──▶ creator wallet
+                                                     │                        │  (or escrow → Circle PW)
+                                                     ▼                        ▼
+                                       Creator dashboard (realtime balance ticks up)
 ```
 
-Then end-to-end: sign up at `/dashboard` → deposit → link Telegram → `/tip <mirror-url>`
-→ confirm → the creator's balance updates and the Arc tx appears on
-`testnet.arcscan.app`. A plain blog URL takes the escrow + claim path (`/claim/<token>`).
+- **Reader balances** are a Supabase ledger over a pooled Arc **treasury** wallet.
+- **Settlement** is the proven x402 path: the treasury pays the gated `/api/settle`
+  endpoint, moving USDC to the creator's Arc address (`lib/arc.ts`, `lib/payer.ts`).
+- **Escrow / offramp**: creators without a wallet accrue escrow + get a **Circle
+  Programmable Wallet** (`lib/circle.ts`); they withdraw to wallet or bank.
 
-## Commands
+## Stack
 
-`/tip <url> [amount] [comment]` · `/balance` · `/history` · `/topup` · `/start [linkToken]`
+Next.js 16 (App Router) · Tailwind 4 · Supabase (Postgres) · Claude via OpenRouter ·
+Circle Programmable Wallets · Arc nanopayments + x402 · Vercel.
+
+## Run it
+
+```bash
+npm install
+cp .env.example .env.local            # fill in keys
+
+# 1. Apply the schema — paste supabase/schema.sql into the Supabase SQL editor
+# 2. Create + fund the Arc treasury wallet
+npm run generate-wallets              # writes TREASURY_WALLET_* (then faucet.circle.com → Arc testnet)
+npm run dev
+
+# 3. Verify the rail, then seed demo content
+npm run settle-smoke                  # treasury settles $0.01 on Arc, prints a tx hash
+npm run seed                          # demo creator + "Iron Ascension" / "The Lantern Court" + funded reader
+```
+
+Then open `/read`, sign up a reader in `/dashboard` (deposit a balance), read a
+chapter, and watch the session summary + the creator dashboard balance tick up live.
+
+### Scripts
+- `npm run generate-wallets` — create the Arc treasury wallet
+- `npm run fund-gateway` — top up the treasury's x402 Gateway deposit
+- `npm run settle-smoke` — prove the Arc settlement rail end-to-end
+- `npm run seed` — seed demo creator, series, chapters, and a funded reader
+
+### Cron (Vercel)
+`vercel.json` schedules Agent 3 (`/api/cron/reprice`, hourly) and Agent 4
+(`/api/cron/budget`, daily). Set `CRON_SECRET` in Vercel; trigger Agent 3 locally
+with `/api/cron/reprice?key=$CRON_SECRET`.
+
+## Routes
+
+`/` landing · `/read` browse · `/series/[id]` · `/chapter/[id]` reader ·
+`/dashboard` reader wallet · `/creator` upload hub · `/creator/dashboard`
+live earnings · `/stats` public live stats.
