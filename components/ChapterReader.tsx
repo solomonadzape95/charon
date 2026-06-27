@@ -179,7 +179,7 @@ export function ChapterReader(props: Props) {
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       {!userId && (
-        <div className="mb-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-muted)]">
+        <div className="mb-6 border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-muted)]">
           You&apos;re reading as a guest.{" "}
           <Link href="/dashboard" className="text-[var(--color-gold)]">
             Set up your reading wallet
@@ -216,21 +216,21 @@ export function ChapterReader(props: Props) {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="this chapter broke me…"
-              className="mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
+              className="mt-1 w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
             />
           </div>
         )}
         {props.nextChapterId ? (
           <Link
             href={`/chapter/${props.nextChapterId}`}
-            className="inline-flex rounded-lg bg-[var(--color-gold)] px-5 py-2.5 text-sm font-semibold text-black"
+            className="inline-flex rounded-full bg-[var(--color-gold)] px-5 py-2.5 text-sm font-semibold text-black"
           >
             Next chapter →
           </Link>
         ) : (
           <Link
             href={`/series/${props.seriesId}`}
-            className="inline-flex rounded-lg border border-[var(--color-border)] px-5 py-2.5 text-sm font-semibold"
+            className="inline-flex rounded-full border border-[var(--color-border)] px-5 py-2.5 text-sm font-semibold"
           >
             Back to series
           </Link>

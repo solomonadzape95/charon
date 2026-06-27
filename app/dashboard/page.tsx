@@ -96,7 +96,7 @@ export default function Dashboard() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-6 py-12">
-      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+      <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <div className="flex items-end justify-between">
           <div>
             <p className="text-utility text-[var(--color-muted)]">Balance</p>
@@ -111,7 +111,7 @@ export default function Dashboard() {
                 key={a}
                 disabled={busy}
                 onClick={() => deposit(a)}
-                className="rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm font-medium transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50"
+                className="rounded-full border border-[var(--color-border)] px-3 py-2 text-sm font-medium transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50"
               >
                 + ${a}
               </button>
@@ -121,7 +121,7 @@ export default function Dashboard() {
       </section>
 
       {budget && (budget.lowBalance || budget.modeSwitches.length > 0) && (
-        <section className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <section className="space-y-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           <div className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent-2)] pulse-dot" />
             Budget agent
@@ -132,7 +132,7 @@ export default function Dashboard() {
               <button
                 disabled={busy}
                 onClick={() => deposit(budget.suggestedTopup)}
-                className="rounded-lg bg-[var(--color-gold)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+                className="rounded-full bg-[var(--color-gold)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
               >
                 Top up ${budget.suggestedTopup.toFixed(2)}
               </button>
@@ -143,7 +143,7 @@ export default function Dashboard() {
               <p className="text-sm text-[var(--color-muted)]">{m.reasoning}</p>
               <button
                 onClick={() => enablePreRelease(m.seriesId)}
-                className="rounded-lg border border-[var(--color-gold)] px-3 py-1.5 text-sm font-medium text-[var(--color-gold)]"
+                className="rounded-full border border-[var(--color-gold)] px-3 py-1.5 text-sm font-medium text-[var(--color-gold)]"
               >
                 Enable pre-release
               </button>
@@ -168,7 +168,7 @@ export default function Dashboard() {
             {sessions.map((s) => (
               <li
                 key={s.id}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
+                className="border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">

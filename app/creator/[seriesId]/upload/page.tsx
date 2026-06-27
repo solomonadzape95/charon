@@ -68,7 +68,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
           placeholder="Chapter title (optional)"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
+          className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
         />
 
         <div className="flex gap-2 text-sm">
@@ -77,7 +77,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
               key={t}
               type="button"
               onClick={() => setContentType(t)}
-              className={`rounded-lg border px-3 py-1.5 ${
+              className={`rounded-full border px-3 py-1.5 ${
                 contentType === t
                   ? "border-[var(--color-gold)] text-[var(--color-gold)]"
                   : "border-[var(--color-border)] text-[var(--color-muted)]"
@@ -97,7 +97,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
           }
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="h-72 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-sm"
+          className="h-72 w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-sm"
         />
 
         <label className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
@@ -113,11 +113,11 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
             placeholder="Override price (optional)"
             value={override}
             onChange={(e) => setOverride(e.target.value)}
-            className="w-56 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
+            className="w-56 border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
           />
           <button
             disabled={busy}
-            className="rounded-lg bg-[var(--color-gold)] px-5 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
+            className="rounded-full bg-[var(--color-gold)] px-5 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
           >
             {busy ? "Pricing…" : "Publish chapter"}
           </button>
@@ -127,7 +127,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       {result && (
-        <div className="rounded-2xl border border-[var(--color-gold)] bg-[var(--color-surface)] p-5">
+        <div className="border border-[var(--color-gold)] bg-[var(--color-surface)] p-5">
           <p className="text-sm text-[var(--color-muted)]">Agent priced this chapter at</p>
           <p className="text-3xl font-bold text-[var(--color-gold)]">${result.price.toFixed(2)}</p>
           <p className="mt-2 text-sm">{result.reasoning}</p>

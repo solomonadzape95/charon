@@ -84,7 +84,7 @@ export function SeriesActions({
       <button
         disabled={busy}
         onClick={() => setFollow(mode === "standard" ? "pre_release" : "standard")}
-        className={`rounded-lg border px-3 py-1.5 text-sm font-medium ${
+        className={`rounded-full border px-3 py-1.5 text-sm font-medium ${
           mode === "pre_release"
             ? "border-[var(--color-gold)] text-[var(--color-gold)]"
             : "border-[var(--color-border)] text-[var(--color-muted)]"
@@ -96,7 +96,7 @@ export function SeriesActions({
         <button
           disabled={busy}
           onClick={() => setFollow("standard")}
-          className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium"
+          className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-sm font-medium"
         >
           Follow
         </button>
@@ -105,7 +105,7 @@ export function SeriesActions({
         <button
           disabled={busy}
           onClick={unlock}
-          className="rounded-lg bg-[var(--color-gold)] px-3 py-1.5 text-sm font-semibold text-black"
+          className="rounded-full bg-[var(--color-gold)] px-3 py-1.5 text-sm font-semibold text-black"
         >
           Unlock whole series
         </button>

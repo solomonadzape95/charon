@@ -4,13 +4,16 @@
  * Attribution text + measurement nodes stripped; fill inherits currentColor so
  * it takes the coin-gold from its parent (e.g. `text-[var(--color-gold)]`).
  */
-export function Logo({ size = 40, className = "" }: { size?: number; className?: string }) {
+export function Logo({ size, className = "" }: { size?: number; className?: string }) {
+  // No explicit size → scale with the parent font-size (1em), so the coin can
+  // sit inline inside huge display text (e.g. the footer wordmark's "O").
+  const dim = size ?? "1em";
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="5 4 90 92"
-      width={size}
-      height={size}
+      width={dim}
+      height={dim}
       fill="currentColor"
       className={className}
       aria-hidden="true"

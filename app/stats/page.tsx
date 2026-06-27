@@ -16,7 +16,7 @@ interface Stats {
 
 function Big({ value, label, accent }: { value: string; label: string; accent?: string }) {
   return (
-    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-5">
+    <div className="border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-5">
       <p className={`text-3xl font-bold ${accent ?? ""}`}>{value}</p>
       <p className="mt-1 text-sm text-[var(--color-muted)]">{label}</p>
     </div>
@@ -56,7 +56,7 @@ export default function StatsPage() {
             {s.topCreators.map((c, i) => (
               <li
                 key={i}
-                className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
+                className="flex items-center justify-between border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
               >
                 <span className="text-sm font-medium">{c.name ?? c.slug ?? "Anonymous"}</span>
                 <span className="text-sm font-semibold text-[var(--color-gold)]">${c.earned.toFixed(2)}</span>
@@ -72,7 +72,7 @@ export default function StatsPage() {
           <h2 className="text-lg font-semibold">Recent agent settlements</h2>
           <ul className="space-y-2">
             {s.recent.map((r, i) => (
-              <li key={i} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+              <li key={i} className="border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-[var(--color-gold)]">${r.amount.toFixed(2)}</span>
                   <span className="text-xs text-[var(--color-muted)]">

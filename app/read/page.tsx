@@ -28,11 +28,11 @@ export default async function ReadPage() {
             <Link
               key={s.id}
               href={`/series/${s.id}`}
-              className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition-colors hover:border-[var(--color-gold)]"
+              className="group border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition-colors hover:border-[var(--color-gold)]"
             >
               <div className="flex items-center justify-between">
                 {s.genre && (
-                  <span className="rounded-full bg-[var(--color-surface-2)] px-2 py-0.5 text-xs text-[var(--color-muted)]">
+                  <span className="bg-[var(--color-surface-2)] px-2 py-0.5 text-xs text-[var(--color-muted)]">
                     {s.genre}
                   </span>
                 )}

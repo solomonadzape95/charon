@@ -1,68 +1,62 @@
 import Link from "next/link";
 import { HeroCollage } from "@/components/landing/HeroCollage";
 import { StatsBand } from "@/components/landing/StatsBand";
+import { BigFooter } from "@/components/landing/BigFooter";
 
 const MARQUEE = [
   "NANOPAYMENTS",
   "SETTLED ON ARC",
   "NO SUBSCRIPTION",
   "PAY PER CHAPTER",
-  "THE FERRYMAN'S TOLL",
   "READ FREELY",
   "CREATORS KEEP IT",
   "USDC · x402",
 ];
 
-const FEATURES = [
+const DIFF = [
   {
-    kicker: "Post-reading settlement",
-    title: "Pay for what you actually read",
-    body: "No flat subscription. An agent values each session by how deeply you engaged — time, re-reads, binge depth — and settles a fair coin to the creator afterward.",
-    old: "Subscriptions charge the skimmer and the bingeing superfan the same.",
+    title: "Pay per read",
+    body: "No subscription. You pay for the chapters you actually read, scaled to how deeply you engaged.",
+    old: "Subscriptions charge the skimmer and the superfan the same.",
   },
   {
-    kicker: "Dynamic pricing",
-    title: "Prices that breathe with demand",
-    body: "Every chapter is re-priced from real signals — demand, time decay, momentum, re-read rate — gently, capped at ±20% a day. Trending chapters earn more; abandoned ones ease down.",
-    old: "Fixed prices ignore whether a chapter is loved or skipped.",
+    title: "Living prices",
+    body: "Every chapter re-prices from real demand and reader behaviour — gently, capped at 20% a day.",
+    old: "Fixed prices ignore what readers love or skip.",
   },
   {
-    kicker: "Loyalty & discovery",
-    title: "Devotion is rewarded",
-    body: "Readers following since chapter one pay less. New readers get their first chapters discounted. Binge a series and each extra chapter costs a little less.",
+    title: "Loyalty pays off",
+    body: "Follow from chapter one and pay less. New readers and bingers get discounts too.",
     old: "Patreon tiers are flat and forget how long you've stayed.",
   },
   {
-    kicker: "Direct settlement",
-    title: "Creators keep nearly all of it",
-    body: "Earnings flow straight to the creator's wallet per chapter, per reader, in real time — a small settlement fee, nothing else. No ad pennies, no rights grab, no middle cut.",
-    old: "Royal Road points readers to Patreon. Webtoon and WebNovel take the rest.",
+    title: "Creators keep it",
+    body: "Earnings hit the creator's wallet per chapter, in real time. A small settlement fee, nothing else.",
+    old: "Royal Road sends readers to Patreon. Webtoon and WebNovel take the rest.",
   },
   {
-    kicker: "Pre-release & bundles",
-    title: "Early access, handled by an agent",
-    body: "Opt a series into pre-release and the budget agent auto-pays the moment a chapter drops — it's just there. Or unlock a finished series for one discounted coin.",
-    old: "Patreon early-access is manual, monthly, and takes a third-party cut.",
+    title: "Early access, automated",
+    body: "Opt in and new chapters auto-unlock the moment they drop. Or buy a finished series in one tap.",
+    old: "Patreon early access is manual, monthly, and takes a cut.",
   },
   {
-    kicker: "No paywalls",
-    title: "Never stopped mid-chapter",
-    body: "You never hit a wall asking for coins. Read first; value flows after. A gentle nudge appears only when your balance runs low — never in the middle of a scene.",
-    old: "Coin-gated readers interrupt the story to sell you tokens.",
+    title: "No interruptions",
+    body: "Never stopped mid-chapter to buy coins. Read now; value flows after.",
+    old: "Coin-gated apps break the story to sell you tokens.",
   },
 ];
 
 const STEPS = [
-  { n: "I", title: "Deposit once", body: "Add a USDC balance with a card or wallet — Circle handles the onramp invisibly. No coins to buy." },
-  { n: "II", title: "Read anything", body: "Open any chapter and read like any other app. The agent quietly tracks how you engage." },
-  { n: "III", title: "The coin crosses", body: "After each session a fair nanopayment settles to every creator you read — on Arc, in real time." },
+  { n: "01", title: "Deposit once", body: "Add USDC with a card or wallet. Circle handles the onramp — no coins to buy." },
+  { n: "02", title: "Read anything", body: "Open any chapter. The agent quietly notes how you engage." },
+  { n: "03", title: "Creators get paid", body: "A fair nanopayment settles to every creator you read — on Arc, instantly." },
 ];
 
 const AGENTS = [
-  { name: "Reading Intelligence", body: "Values each session from genuine engagement and settles it to the creator." },
-  { name: "Creator Pricing", body: "Sets a fair base price for every chapter the moment it's uploaded." },
-  { name: "Dynamic Repricing", body: "Continuously tunes prices from demand, decay, loyalty and binge signals." },
-  { name: "Budget Allocation", body: "Watches your balance, suggests top-ups and pre-release at the right moment." },
+  { name: "Reading Intelligence", body: "Values each session and pays the creator." },
+  { name: "Creator Pricing", body: "Prices every chapter on upload." },
+  { name: "Dynamic Repricing", body: "Tunes prices from live demand." },
+  { name: "Budget Allocation", body: "Manages your balance and top-ups." },
 ];
 
 export default function Home() {
@@ -83,36 +77,48 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Why Charon — editorial feature cards */}
-      <section className="mx-auto max-w-[88rem] px-6 py-20 lg:px-10">
-        <div className="mb-12 max-w-2xl">
-          <p className="text-utility mb-4 text-[var(--color-gold)]">Why Charon</p>
-          <h2 className="font-display display-md font-semibold">
-            Every reading platform makes you choose: a flat fee, or ads. Charon fixes the unit.
-          </h2>
-        </div>
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div key={f.title} className="flex flex-col gap-3 bg-[var(--color-bg)] p-7">
-              <p className="text-utility text-[var(--color-gold)]">{f.kicker}</p>
-              <h3 className="font-display text-2xl font-semibold leading-tight">{f.title}</h3>
-              <p className="text-[var(--color-muted)]">{f.body}</p>
-              <p className="mt-auto border-t border-[var(--color-border)] pt-3 text-sm italic text-[var(--color-muted)]">
-                {f.old}
-              </p>
-            </div>
-          ))}
+      {/* The difference — editorial index list */}
+      <section className="mx-auto max-w-[88rem] px-6 lg:px-10">
+        <div className="grid gap-10 py-20 md:grid-cols-12">
+          <div className="md:col-span-4 md:sticky md:top-28 md:self-start">
+            <p className="text-utility mb-4 text-[var(--color-gold)]">The difference</p>
+            <h2 className="font-display display-md font-semibold">
+              Every platform makes you choose a flat fee or ads. We fixed the unit.
+            </h2>
+          </div>
+          <div className="md:col-span-8">
+            {DIFF.map((d, i) => (
+              <div
+                key={d.title}
+                className="grid grid-cols-12 gap-4 border-t border-[var(--color-border)] py-8 first:border-t-0 first:pt-0"
+              >
+                <span className="text-utility col-span-2 pt-2 text-[var(--color-muted)] md:col-span-1">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="col-span-10 md:col-span-11">
+                  <h3 className="font-display text-2xl font-semibold md:text-3xl">{d.title}</h3>
+                  <p className="mt-2 max-w-xl text-[var(--color-muted)]">{d.body}</p>
+                  <p className="mt-3 text-sm text-[var(--color-muted)]/70">— {d.old}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* How it works */}
+      {/* How it works — three numbered columns split by hairlines */}
       <section className="border-y border-[var(--color-border)] bg-[var(--color-surface)]">
         <div className="mx-auto max-w-[88rem] px-6 py-20 lg:px-10">
           <p className="text-utility mb-12 text-[var(--color-gold)]">How it works</p>
-          <div className="grid gap-12 md:grid-cols-3">
-            {STEPS.map((s) => (
-              <div key={s.n} className="flex flex-col gap-3">
-                <span className="font-display text-5xl font-bold text-coin">{s.n}</span>
+          <div className="grid md:grid-cols-3">
+            {STEPS.map((s, i) => (
+              <div
+                key={s.n}
+                className={`flex flex-col gap-4 py-2 md:px-10 md:first:pl-0 ${
+                  i > 0 ? "border-t border-[var(--color-border)] pt-10 md:border-l md:border-t-0 md:pt-2" : ""
+                }`}
+              >
+                <span className="font-display text-6xl font-bold text-coin">{s.n}</span>
                 <h3 className="font-display text-2xl font-semibold">{s.title}</h3>
                 <p className="text-[var(--color-muted)]">{s.body}</p>
               </div>
@@ -121,32 +127,36 @@ export default function Home() {
         </div>
       </section>
 
-      {/* The four agents */}
+      {/* The four agents — hairline-split row */}
       <section className="mx-auto max-w-[88rem] px-6 py-20 lg:px-10">
         <div className="mb-12 max-w-2xl">
           <p className="text-utility mb-4 text-[var(--color-gold)]">Four agents at work</p>
           <h2 className="font-display display-md font-semibold">
-            Real reasoning, settled on-chain — and shown to you in one plain sentence.
+            Real decisions, settled on-chain — shown to you in one plain line.
           </h2>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4">
           {AGENTS.map((a, i) => (
-            <div key={a.name} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-              <span className="text-utility text-[var(--color-muted)]">Agent {i + 1}</span>
-              <h3 className="font-display mt-2 text-xl font-semibold text-[var(--color-gold)]">{a.name}</h3>
-              <p className="mt-2 text-[var(--color-muted)]">{a.body}</p>
+            <div
+              key={a.name}
+              className={`flex flex-col gap-2 border-t border-[var(--color-border)] py-6 lg:border-t-0 lg:py-0 lg:pl-8 ${
+                i > 0 ? "lg:border-l lg:border-[var(--color-border)]" : ""
+              } lg:first:pl-0`}
+            >
+              <span className="font-display text-4xl font-bold text-coin">{["I", "II", "III", "IV"][i]}</span>
+              <h3 className="font-display text-xl font-semibold text-[var(--color-ink)]">{a.name}</h3>
+              <p className="text-[var(--color-muted)]">{a.body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Closing CTA */}
+      {/* Closing */}
       <section className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
         <div className="mx-auto flex max-w-[88rem] flex-col items-center gap-6 px-6 py-24 text-center lg:px-10">
-          <p className="font-display display-md max-w-3xl font-semibold">
-            The ferryman took one coin per crossing. Every chapter is a crossing.
-          </p>
-          <p className="text-lg text-[var(--color-muted)]">The coin is automatic.</p>
+          <h2 className="font-display display-md max-w-2xl font-semibold">
+            Every chapter, paid the moment it&apos;s read.
+          </h2>
           <div className="flex flex-wrap justify-center gap-3">
             <Link href="/read" className="btn-coin">
               Start reading
@@ -158,19 +168,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-[var(--color-border)]">
-        <div className="mx-auto flex max-w-[88rem] flex-wrap items-center justify-between gap-4 px-6 py-10 lg:px-10">
-          <div className="flex items-center gap-3">
-            <span className="font-display text-lg font-semibold text-coin">Charon</span>
-            <span className="h-4 w-px bg-[var(--color-border)]" />
-            <span className="text-utility text-[var(--color-muted)]">Settled on Arc · Circle · x402</span>
-          </div>
-          <span className="text-utility text-[var(--color-muted)]">
-            Coin emblem by Brickclay · Noun Project
-          </span>
-        </div>
-      </footer>
+      <BigFooter />
     </>
   );
 }

@@ -9,16 +9,14 @@ type Role = "reader" | "creator";
 const COPY: Record<Role, { eyebrow: string; title: string; blurb: string; cta: string }> = {
   reader: {
     eyebrow: "For readers",
-    title: "Cross freely",
-    blurb:
-      "Sign up with email — no wallet required. Deposit a balance once and read anything; the agent settles a fair coin to creators after each session.",
-    cta: "Enter",
+    title: "Read freely",
+    blurb: "Email only — no wallet. Deposit once, read anything, pay fair value automatically.",
+    cta: "Continue",
   },
   creator: {
     eyebrow: "For creators",
-    title: "Carry your work across",
-    blurb:
-      "Sign up with email — no crypto knowledge required. Upload your series; the agent prices each chapter and pays you directly as readers finish them.",
+    title: "Publish & earn",
+    blurb: "Email only — no crypto needed. Upload your series; get paid per chapter, per reader.",
     cta: "Create account",
   },
 };
@@ -63,8 +61,8 @@ export function AuthForm({ role, onAuthed }: { role: Role; onAuthed?: (id: strin
 
   return (
     <div className="w-full max-w-md">
-      <div className="mb-7 flex flex-col items-center text-center">
-        <Logo size={52} className="mb-5 text-[var(--color-gold)]" />
+      <div className="mb-8 flex flex-col items-start">
+        <Logo size={84} className="mb-6 text-[var(--color-gold)]" />
         <p className="text-utility text-[var(--color-gold)]">{copy.eyebrow}</p>
         <h1 className="font-display display-md mt-2 font-semibold">{copy.title}</h1>
         <p className="mt-3 text-[var(--color-muted)]">{copy.blurb}</p>
@@ -117,18 +115,27 @@ export function AuthForm({ role, onAuthed }: { role: Role; onAuthed?: (id: strin
   );
 }
 
-/** Full-screen mythic auth surface for the standalone /join and /creator/join pages. */
+/** Full-screen split auth surface for the standalone /join and /creator/join pages. */
 export function AuthScreen({ role }: { role: Role }) {
+  const image = role === "reader" ? "/hero/03-original.jpg" : "/hero/06-original.jpg";
   return (
-    <div className="relative grid min-h-[calc(100vh-4.5rem)] place-items-center overflow-hidden px-6 py-16">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.06]"
-        style={{
-          backgroundImage: "radial-gradient(circle at 50% 0%, var(--color-gold) 0%, transparent 60%)",
-        }}
-      />
-      <div className="fade-up relative">
+    <div className="grid min-h-screen md:grid-cols-2">
+      {/* Image panel */}
+      <div className="relative hidden overflow-hidden border-r border-[var(--color-border)] md:block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover grayscale-[0.2]" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/85 via-black/40 to-transparent" />
+        <a href="/" className="absolute left-8 top-8 flex items-center gap-2.5">
+          <Logo size={40} className="text-[var(--color-gold)]" />
+          <span className="font-display text-2xl font-semibold text-coin">Charon</span>
+        </a>
+        <p className="font-display absolute bottom-10 left-8 right-8 text-3xl font-semibold leading-tight">
+          Read freely.<br />Pay for what it&apos;s worth.
+        </p>
+      </div>
+
+      {/* Form panel */}
+      <div className="fade-up grid place-items-center px-6 py-16 sm:px-12">
         <AuthForm role={role} />
       </div>
     </div>

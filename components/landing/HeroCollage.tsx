@@ -27,10 +27,10 @@ export function HeroCollage() {
         <div className="grid grid-cols-12 items-end gap-6">
           <div className="fade-up col-span-12 md:col-span-5">
             <p className="max-w-md text-lg leading-relaxed text-[var(--color-muted)]">
-              Deposit once and read webnovels and manga with{" "}
+              A reading platform with{" "}
               <span className="text-[var(--color-ink)]">no subscription and no paywalls</span>.
-              After each session an AI agent values what you actually read and pays the
-              creator a fair coin — automatically, on-chain.
+              Deposit once; after each session an agent pays the creator what your reading was
+              actually worth.
             </p>
           </div>
           <div className="col-span-12 md:col-span-7">

@@ -21,7 +21,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
     <div className="mx-auto max-w-4xl space-y-8 px-6 py-12">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
-          {series.genre && <span className="rounded-full bg-[var(--color-surface-2)] px-2 py-0.5">{series.genre}</span>}
+          {series.genre && <span className="bg-[var(--color-surface-2)] px-2 py-0.5">{series.genre}</span>}
           <span>{series.status}</span>
         </div>
         <h1 className="text-3xl font-bold">{series.title}</h1>
@@ -37,7 +37,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
         {chapters.length === 0 ? (
           <p className="text-sm text-[var(--color-muted)]">No chapters published yet.</p>
         ) : (
-          <ul className="divide-y divide-[var(--color-border)] overflow-hidden rounded-2xl border border-[var(--color-border)]">
+          <ul className="divide-y divide-[var(--color-border)] overflow-hidden border border-[var(--color-border)]">
             {chapters.map((c) => (
               <li key={c.id}>
                 <Link

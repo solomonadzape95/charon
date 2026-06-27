@@ -78,7 +78,7 @@ export default function CreatorHub() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-6 py-12">
-      <section className="flex items-end justify-between rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+      <section className="flex items-end justify-between border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <div>
           <p className="text-sm text-[var(--color-muted)]">Claimable earnings</p>
           <p className="text-4xl font-bold text-[var(--color-gold)]">${Number(creator.balance_usd).toFixed(2)}</p>
@@ -101,7 +101,7 @@ export default function CreatorHub() {
               {series.map((s) => (
                 <li
                   key={s.id}
-                  className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
+                  className="flex items-center justify-between border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
                 >
                   <div>
                     <p className="text-sm font-medium">{s.title}</p>
@@ -121,30 +121,30 @@ export default function CreatorHub() {
           )}
         </div>
 
-        <form onSubmit={createSeries} className="space-y-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+        <form onSubmit={createSeries} className="space-y-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
           <h2 className="text-lg font-semibold">New series</h2>
           <input
             required
             placeholder="Title"
             value={sform.title}
             onChange={(e) => setSform({ ...sform, title: e.target.value })}
-            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm"
+            className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm"
           />
           <input
             placeholder="Genre (fantasy, litrpg, manhwa…)"
             value={sform.genre}
             onChange={(e) => setSform({ ...sform, genre: e.target.value })}
-            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm"
+            className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm"
           />
           <textarea
             placeholder="Description"
             value={sform.description}
             onChange={(e) => setSform({ ...sform, description: e.target.value })}
-            className="h-20 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm"
+            className="h-20 w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm"
           />
           <button
             disabled={busy}
-            className="w-full rounded-lg bg-[var(--color-gold)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
+            className="w-full rounded-full bg-[var(--color-gold)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
           >
             Create series
           </button>

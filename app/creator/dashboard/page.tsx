@@ -59,7 +59,7 @@ export default function CreatorDashboard() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-6 py-12">
-      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+      <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <p className="text-utility text-[var(--color-muted)]">Claimable balance · live</p>
         <p
           className={`text-5xl font-bold transition-colors ${
@@ -83,7 +83,7 @@ export default function CreatorDashboard() {
             {data.payments.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
+                className="flex items-center justify-between border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
               >
                 <div>
                   <span className="text-sm font-medium">{p.chapter ?? "Chapter"}</span>

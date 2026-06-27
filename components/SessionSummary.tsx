@@ -26,10 +26,10 @@ export function SessionSummary({ result, onClose }: { result: SessionResult; onC
       onClick={onClose}
     >
       <div
-        className="fade-up w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center"
+        className="fade-up w-full max-w-md border border-[var(--color-border)] bg-[var(--color-surface)] p-6 text-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1 text-xs text-[var(--color-muted)]">
+        <div className="mx-auto mb-3 inline-flex items-center gap-2 border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1 text-xs text-[var(--color-muted)]">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent-2)] pulse-dot" />
           Reading Intelligence agent
         </div>
@@ -63,7 +63,7 @@ export function SessionSummary({ result, onClose }: { result: SessionResult; onC
 
         <button
           onClick={onClose}
-          className="mt-6 w-full rounded-lg bg-[var(--color-gold)] px-4 py-2.5 text-sm font-semibold text-black"
+          className="mt-6 w-full rounded-full bg-[var(--color-gold)] px-4 py-2.5 text-sm font-semibold text-black"
         >
           Keep reading
         </button>
