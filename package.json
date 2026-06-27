@@ -1,0 +1,43 @@
+{
+  "name": "charon",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "generate-wallets": "node --experimental-transform-types --no-warnings scripts/generate-wallets.mts",
+    "fund-gateway": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/fund-gateway.mts",
+    "spike": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/spike.mts",
+    "bot": "node --env-file=.env.local --import tsx scripts/bot.mts",
+    "set-webhook": "node --env-file=.env.local --import tsx scripts/set-webhook.mts",
+    "agent-test": "node --env-file=.env.local --import tsx scripts/agent-test.mts"
+  },
+  "dependencies": {
+    "@circle-fin/developer-controlled-wallets": "^10.7.1",
+    "@circle-fin/x402-batching": "^3.0.4",
+    "@supabase/supabase-js": "^2.99.0",
+    "@x402/core": "^2.11.0",
+    "@x402/evm": "^2.11.0",
+    "clsx": "^2.1.1",
+    "grammy": "^1.44.0",
+    "lucide-react": "^0.577.0",
+    "next": "^16.1.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "resend": "^6.14.0",
+    "tailwind-merge": "^3.5.0",
+    "viem": "^2.48.11"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^25.4.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3"
+  }
+}
