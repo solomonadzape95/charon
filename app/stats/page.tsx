@@ -36,9 +36,9 @@ export default function StatsPage() {
   if (!s) return <p className="text-sm text-[var(--color-muted)]">Loading live stats…</p>;
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-bold">Live on Arc</h1>
+        <h1 className="font-display text-3xl font-semibold">Live on Arc</h1>
         <p className="text-sm text-[var(--color-muted)]">Settled USDC across the platform, updating in real time.</p>
       </div>
 

@@ -1,16 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #07080d;
-  --color-surface: #0e1018;
-  --color-surface-2: #151926;
-  --color-border: #222838;
-  --color-ink: #e8ecf5;
-  --color-muted: #8b93a7;
-  --color-accent: #5b8cff;
-  --color-accent-2: #3ddc97;
-  --color-gold: #f5c451;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Canvas — pure black, editorial */
+  --color-bg: #0a0a0a;
+  --color-surface: #121212;
+  --color-surface-2: #181818;
+  --color-border: #232323;
+  --color-ink: #f5f3ee;
+  --color-muted: #8d877a;
+
+  /* Coin gold — the accent. A warm, metallic drachma gold. */
+  --color-gold: #d9a441;
+  --color-gold-soft: #ecc879;
+  --color-gold-deep: #a87b2e;
+  --color-accent: #d9a441;
+
+  /* Verdigris — oxidised bronze; used for "live / settled" status. */
+  --color-accent-2: #4cc2a0;
+
+  /* Fonts (wired to next/font in layout.tsx) */
+  --font-display: var(--font-cinzel), "Cinzel", Georgia, serif;
+  --font-sans: var(--font-garamond), "EB Garamond", Georgia, serif;
+  --font-mono: var(--font-dm-mono), "DM Mono", ui-monospace, monospace;
 }
 
 html,
@@ -18,7 +29,9 @@ body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  font-size: 17px;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "kern", "liga";
 }
 
 * {
@@ -31,33 +44,152 @@ a {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--color-gold) 35%, transparent);
 }
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 1; }
+/* ── Type system ───────────────────────────────────────────── */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
-.pulse-dot { animation: pulse-dot 1.4s ease-in-out infinite; }
 
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+/* DM Mono utility / metadata surface — uppercase, tracked out */
+.text-utility {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
-.fade-up { animation: fade-up 0.35s ease both; }
 
-.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
-.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 8px; }
+.tabular {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* Coin-gold metallic text (logo wordmark, headline accents) */
+.text-coin {
+  background: linear-gradient(
+    180deg,
+    var(--color-gold-soft) 0%,
+    var(--color-gold) 48%,
+    var(--color-gold-deep) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Giant editorial display sizing (Gauntlet-scale) */
+.display-xl {
+  font-size: clamp(3.25rem, 10vw, 9rem);
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+}
+.display-lg {
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+}
+.display-md {
+  font-size: clamp(1.9rem, 4vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+}
+
+/* ── Components ─────────────────────────────────────────────── */
+.btn-coin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, var(--color-gold-soft), var(--color-gold));
+  color: #1a1304;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.6rem;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.btn-coin:hover {
+  filter: brightness(1.08);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.85rem 1.6rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.btn-outline:hover {
+  border-color: var(--color-gold);
+  background: color-mix(in srgb, var(--color-gold) 8%, transparent);
+}
 
 .charon-input {
   width: 100%;
-  border-radius: 0.5rem;
+  border-radius: 0.6rem;
   border: 1px solid var(--color-border);
   background: var(--color-surface-2);
-  padding: 0.55rem 0.7rem;
-  font-size: 14px;
+  padding: 0.7rem 0.85rem;
+  font-size: 1rem;
+  font-family: var(--font-sans);
   color: var(--color-ink);
   outline: none;
+  transition: border-color 0.2s ease;
 }
-.charon-input:focus { border-color: var(--color-accent); }
-.charon-input::placeholder { color: var(--color-muted); }
+.charon-input:focus {
+  border-color: var(--color-gold);
+}
+.charon-input::placeholder {
+  color: var(--color-muted);
+}
+
+/* Hairline divider */
+.rule {
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* ── Animations ────────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.pulse-dot { animation: pulse-dot 1.6s ease-in-out infinite; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes marquee-text {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-text { animation: marquee-text 30s linear infinite; }
+
+@keyframes marquee-loop {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-33.3333%, 0, 0); }
+}
+
+.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 8px; }

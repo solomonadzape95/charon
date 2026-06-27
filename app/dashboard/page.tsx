@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { AuthForm } from "@/components/AuthForm";
 
 interface User {
   id: string;
@@ -34,7 +35,6 @@ export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [budget, setBudget] = useState<Budget | null>(null);
-  const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async (id: string) => {
@@ -68,25 +68,6 @@ export default function Dashboard() {
     if (id) load(id);
   }, [load]);
 
-  async function signup(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const res = await fetch("/api/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (data.user) {
-        localStorage.setItem(LS_KEY, data.user.id);
-        await load(data.user.id);
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function deposit(amount: number) {
     if (!user) return;
     setBusy(true);
@@ -105,38 +86,20 @@ export default function Dashboard() {
 
   if (!user) {
     return (
-      <div className="mx-auto max-w-md space-y-6 pt-10">
-        <h1 className="text-2xl font-bold">Your reading wallet</h1>
-        <p className="text-sm text-[var(--color-muted)]">
-          Sign up with email — no wallet required. Deposit a balance and read freely;
-          the agent settles fair value to creators after each session.
-        </p>
-        <form onSubmit={signup} className="flex gap-2">
-          <input
-            type="email"
-            required
-            placeholder="you@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
-          />
-          <button
-            disabled={busy}
-            className="rounded-lg bg-[var(--color-gold)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
-          >
-            Continue
-          </button>
-        </form>
+      <div className="grid min-h-[calc(100vh-4.5rem)] place-items-center px-6 py-16">
+        <div className="fade-up">
+          <AuthForm role="reader" onAuthed={(id) => load(id)} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8 px-6 py-12">
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-sm text-[var(--color-muted)]">Balance</p>
+            <p className="text-utility text-[var(--color-muted)]">Balance</p>
             <p className="text-4xl font-bold text-[var(--color-gold)]">
               ${Number(user.balance_usd).toFixed(2)}
             </p>

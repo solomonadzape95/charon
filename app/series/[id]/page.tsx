@@ -18,7 +18,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
   ]);
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-4xl space-y-8 px-6 py-12">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-xs text-[var(--color-muted)]">
           {series.genre && <span className="rounded-full bg-[var(--color-surface-2)] px-2 py-0.5">{series.genre}</span>}

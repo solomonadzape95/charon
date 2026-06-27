@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { AuthForm } from "@/components/AuthForm";
 
 interface Creator {
   id: string;
@@ -23,7 +24,6 @@ const LS_KEY = "charon_creator_id";
 export default function CreatorHub() {
   const [creator, setCreator] = useState<Creator | null>(null);
   const [series, setSeries] = useState<Series[]>([]);
-  const [form, setForm] = useState({ email: "", name: "", wallet: "" });
   const [sform, setSform] = useState({ title: "", genre: "", description: "" });
   const [busy, setBusy] = useState(false);
 
@@ -45,25 +45,6 @@ export default function CreatorHub() {
     const id = localStorage.getItem(LS_KEY);
     if (id) load(id);
   }, [load]);
-
-  async function signup(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const res = await fetch("/api/creators", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email, name: form.name, walletAddress: form.wallet || undefined }),
-      });
-      const data = await res.json();
-      if (data.creator) {
-        localStorage.setItem(LS_KEY, data.creator.id);
-        await load(data.creator.id);
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function createSeries(e: React.FormEvent) {
     e.preventDefault();
@@ -87,46 +68,16 @@ export default function CreatorHub() {
 
   if (!creator) {
     return (
-      <div className="mx-auto max-w-md space-y-6 pt-10">
-        <h1 className="text-2xl font-bold">Earn per chapter, per reader</h1>
-        <p className="text-sm text-[var(--color-muted)]">
-          Sign up with email — no crypto knowledge required. Upload your series; the
-          agent prices each chapter and pays you directly as readers finish them.
-        </p>
-        <form onSubmit={signup} className="space-y-3">
-          <input
-            type="email"
-            required
-            placeholder="you@email.com"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Pen name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
-          />
-          <input
-            placeholder="Payout wallet address (optional — 0x… on Arc)"
-            value={form.wallet}
-            onChange={(e) => setForm({ ...form, wallet: e.target.value })}
-            className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm"
-          />
-          <button
-            disabled={busy}
-            className="w-full rounded-lg bg-[var(--color-gold)] px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-50"
-          >
-            Create creator account
-          </button>
-        </form>
+      <div className="grid min-h-[calc(100vh-4.5rem)] place-items-center px-6 py-16">
+        <div className="fade-up">
+          <AuthForm role="creator" onAuthed={(id) => load(id)} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8 px-6 py-12">
       <section className="flex items-end justify-between rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <div>
           <p className="text-sm text-[var(--color-muted)]">Claimable earnings</p>

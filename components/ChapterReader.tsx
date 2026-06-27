@@ -177,7 +177,7 @@ export function ChapterReader(props: Props) {
   }, []);
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl px-6 py-12">
       {!userId && (
         <div className="mb-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm text-[var(--color-muted)]">
           You&apos;re reading as a guest.{" "}

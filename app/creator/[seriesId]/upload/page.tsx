@@ -52,7 +52,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6 px-6 py-12">
       <div>
         <Link href="/creator" className="text-sm text-[var(--color-muted)]">
           ← Back

@@ -7,10 +7,10 @@ export default async function ReadPage() {
   const series = await listSeries(60);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6 px-6 py-12">
       <div>
-        <h1 className="text-2xl font-bold">Browse</h1>
-        <p className="text-sm text-[var(--color-muted)]">
+        <h1 className="font-display text-3xl font-semibold">Browse</h1>
+        <p className="mt-1 text-[var(--color-muted)]">
           Read anything. Value flows to creators automatically after each session.
         </p>
       </div>

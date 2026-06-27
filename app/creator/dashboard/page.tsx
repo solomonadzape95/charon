@@ -48,7 +48,7 @@ export default function CreatorDashboard() {
 
   if (!data) {
     return (
-      <p className="text-sm text-[var(--color-muted)]">
+      <p className="mx-auto max-w-6xl px-6 py-12 text-[var(--color-muted)]">
         <Link href="/creator" className="text-[var(--color-gold)]">
           Sign in as a creator
         </Link>{" "}
@@ -58,9 +58,9 @@ export default function CreatorDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8 px-6 py-12">
       <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-        <p className="text-sm text-[var(--color-muted)]">Claimable balance · live</p>
+        <p className="text-utility text-[var(--color-muted)]">Claimable balance · live</p>
         <p
           className={`text-5xl font-bold transition-colors ${
             pulse ? "text-[var(--color-accent-2)]" : "text-[var(--color-gold)]"
