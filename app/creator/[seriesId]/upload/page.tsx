@@ -9,8 +9,9 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
   const [contentType, setContentType] = useState<"text" | "images">("text");
   const [content, setContent] = useState("");
   const [override, setOverride] = useState("");
+  const [earlyAccess, setEarlyAccess] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ price: number; reasoning: string; chapterId: string } | null>(null);
+  const [result, setResult] = useState<{ price: number; reasoning: string; chapterId: string; unlocks: number } | null>(null);
   const [error, setError] = useState("");
 
   async function submit(e: React.FormEvent) {
@@ -27,6 +28,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
           title: title || undefined,
           contentType,
           content,
+          earlyAccess,
           overrideBasePrice: override ? Number(override) : undefined,
         }),
       });
@@ -39,6 +41,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
         price: Number(data.chapter.base_price_usdc),
         reasoning: data.pricingReasoning,
         chapterId: data.chapter.id,
+        unlocks: Number(data.preReleaseUnlocks) || 0,
       });
       setTitle("");
       setContent("");
@@ -97,6 +100,11 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
           className="h-72 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-sm"
         />
 
+        <label className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+          <input type="checkbox" checked={earlyAccess} onChange={(e) => setEarlyAccess(e.target.checked)} />
+          Early-access drop — pre-release subscribers are auto-charged & unlocked instantly
+        </label>
+
         <div className="flex items-center gap-3">
           <input
             type="number"
@@ -123,6 +131,11 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
           <p className="text-sm text-[var(--color-muted)]">Agent priced this chapter at</p>
           <p className="text-3xl font-bold text-[var(--color-gold)]">${result.price.toFixed(2)}</p>
           <p className="mt-2 text-sm">{result.reasoning}</p>
+          {result.unlocks > 0 && (
+            <p className="mt-1 text-sm text-[var(--color-accent-2)]">
+              Auto-paid & unlocked for {result.unlocks} pre-release subscriber{result.unlocks > 1 ? "s" : ""}.
+            </p>
+          )}
           <Link href={`/chapter/${result.chapterId}`} className="mt-3 inline-block text-sm text-[var(--color-gold)]">
             Preview chapter →
           </Link>

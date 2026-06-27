@@ -16,12 +16,15 @@ import {
   adjustCreatorBalance,
   adjustUserBalance,
   getCreatorById,
+  listChapters,
   listPaymentsForCreator,
   markCreatorClaimed,
   recordPayment,
   setCreatorCircleWallet,
+  setFollowMode,
   updatePayment,
 } from "@/lib/db";
+import { bundlePrice } from "@/lib/pricing";
 import type { Creator } from "@/lib/supabase";
 
 export const MIN_SETTLE = 0.01;
@@ -124,6 +127,33 @@ export async function settleSession(args: SettleSessionArgs): Promise<SettleResu
     }
   }
   return { paymentId: payment.id, status: "escrowed" };
+}
+
+/**
+ * Mode 3 — unlock an entire (completed) series for a single discounted payment.
+ * Settles the bundle to the creator, then marks the reader's follow as series_unlock
+ * so per-session settlement is skipped while they binge.
+ */
+export async function unlockSeries(args: {
+  userId: string;
+  seriesId: string;
+  creator: Creator;
+}): Promise<{ ok: boolean; amount: number; txHash?: string; reason?: string }> {
+  const chapters = await listChapters(args.seriesId);
+  if (!chapters.length) return { ok: false, amount: 0, reason: "no chapters to unlock" };
+  const amount = bundlePrice(chapters);
+  const refChapterId = chapters[0].id;
+
+  const result = await settleSession({
+    userId: args.userId,
+    creator: args.creator,
+    chapterId: refChapterId,
+    amountUsd: amount,
+    debitKind: "unlock_debit",
+  });
+  if (result.status === "failed") return { ok: false, amount, reason: result.reason };
+  await setFollowMode(args.userId, args.seriesId, "series_unlock");
+  return { ok: true, amount, txHash: result.txHash };
 }
 
 /**

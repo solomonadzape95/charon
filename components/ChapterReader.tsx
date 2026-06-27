@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { SessionSummary, type SessionResult } from "@/components/SessionSummary";
+import { PriceBadge } from "@/components/PriceBadge";
 
 interface Props {
   chapterId: string;
@@ -38,6 +39,11 @@ export function ChapterReader(props: Props) {
   const [userId, setUserId] = useState<string | null>(null);
   const [summary, setSummary] = useState<SessionResult | null>(null);
   const [comment, setComment] = useState("");
+  const [price, setPrice] = useState<{ readerPrice: number; label: string; lastChangeReason: string | null }>({
+    readerPrice: props.price,
+    label: "standard",
+    lastChangeReason: null,
+  });
 
   const sessionIdRef = useRef<string | null>(null);
   const startedRef = useRef<number>(Date.now());
@@ -54,6 +60,15 @@ export function ChapterReader(props: Props) {
   useEffect(() => {
     const id = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
     setUserId(id);
+
+    // Personalized price + the reason driving it (loyalty / discovery / repricing).
+    fetch(`/api/chapter/price?chapterId=${props.chapterId}${id ? `&userId=${id}` : ""}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.readerPrice === "number") setPrice({ readerPrice: d.readerPrice, label: d.label, lastChangeReason: d.lastChangeReason ?? null });
+      })
+      .catch(() => {});
+
     if (!id) return;
 
     const bingeDepth = nextBingeDepth();
@@ -178,7 +193,13 @@ export function ChapterReader(props: Props) {
           ← {props.seriesTitle}
         </Link>
         <h1 className="mt-2 text-3xl font-bold">{props.title}</h1>
-        <p className="mt-1 text-xs text-[var(--color-muted)]">~{props.estReadMin} min read · ${props.price.toFixed(2)} this session est.</p>
+        <div className="mt-2 flex items-center gap-2">
+          <PriceBadge price={price.readerPrice} label={price.label} />
+          <span className="text-xs text-[var(--color-muted)]">~{props.estReadMin} min read</span>
+        </div>
+        {price.lastChangeReason && (
+          <p className="mt-1 text-xs text-[var(--color-muted)]">{price.lastChangeReason}</p>
+        )}
       </header>
 
       {props.contentType === "text" ? (

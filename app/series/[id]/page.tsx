@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getCreatorById, getSeriesById, listChapters } from "@/lib/db";
 import { PriceBadge } from "@/components/PriceBadge";
+import { SeriesActions } from "@/components/SeriesActions";
 import { estimatedReadMinutes } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,9 @@ export default async function SeriesPage({ params }: { params: Promise<{ id: str
         <h1 className="text-3xl font-bold">{series.title}</h1>
         {creator?.name && <p className="text-sm text-[var(--color-muted)]">by {creator.name}</p>}
         {series.description && <p className="max-w-2xl text-[var(--color-muted)]">{series.description}</p>}
+        <div className="pt-2">
+          <SeriesActions seriesId={series.id} status={series.status} />
+        </div>
       </header>
 
       <section className="space-y-2">

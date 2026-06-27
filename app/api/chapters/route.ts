@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createChapter, getSeriesById, listChapters, nextChapterNumber, updateSeries } from "@/lib/db";
+import {
+  createChapter,
+  getCreatorById,
+  getSeriesById,
+  getUserById,
+  listChapters,
+  listSubscribers,
+  nextChapterNumber,
+  updateSeries,
+} from "@/lib/db";
 import { priceChapter } from "@/lib/agents/pricing";
+import { settleSession } from "@/lib/payments";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -28,6 +38,7 @@ export async function POST(req: NextRequest) {
     contentType?: "text" | "images";
     content?: string;
     earlyAccessReleaseAt?: string | null;
+    earlyAccess?: boolean;
     overrideBasePrice?: number;
   } = {};
   try {
@@ -87,5 +98,26 @@ export async function POST(req: NextRequest) {
   // Light momentum bump for an active series.
   await updateSeries(seriesId, { momentum_score: Number(series.momentum_score) + 1 });
 
-  return NextResponse.json({ chapter, pricingReasoning: pricing.reasoning });
+  // Mode 2 — pre-release: Agent 4 auto-pays subscribers the moment a chapter drops.
+  let preReleaseUnlocks = 0;
+  if (body.earlyAccess) {
+    const creator = await getCreatorById(series.creator_id);
+    const subscribers = await listSubscribers(seriesId, "pre_release");
+    if (creator) {
+      for (const sub of subscribers) {
+        const user = await getUserById(sub.user_id);
+        if (!user || Number(user.balance_usd) < pricing.earlyAccessPrice) continue;
+        const res = await settleSession({
+          userId: sub.user_id,
+          creator,
+          chapterId: chapter.id,
+          amountUsd: pricing.earlyAccessPrice,
+          debitKind: "unlock_debit",
+        });
+        if (res.status !== "failed") preReleaseUnlocks++;
+      }
+    }
+  }
+
+  return NextResponse.json({ chapter, pricingReasoning: pricing.reasoning, preReleaseUnlocks });
 }

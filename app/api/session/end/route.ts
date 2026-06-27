@@ -4,6 +4,7 @@ import {
   finalizeSession,
   getChapterById,
   getCreatorById,
+  getFollow,
   getOrCreateLoyalty,
   getSessionById,
   getSeriesById,
@@ -72,6 +73,28 @@ export async function POST(req: NextRequest) {
 
   const loyalty = await getOrCreateLoyalty(session.user_id, series.id);
   const priorReads = await priorReadsOfChapter(session.user_id, session.chapter_id);
+
+  // Series already unlocked (Mode 3) → no per-session charge.
+  const follow = await getFollow(session.user_id, series.id);
+  if (follow?.mode === "series_unlock") {
+    await finalizeSession(session.id, {
+      ended_at: new Date().toISOString(),
+      completion_rate: clamp01(Number(body.completionRate)),
+      scroll_back_count: Math.max(0, Math.round(Number(body.scrollBackCount) || 0)),
+      time_spent_seconds: Math.max(0, Number(body.timeSpentSeconds) || 0),
+      amount_settled_usdc: 0,
+      agent_reasoning: "Included in your series pass — read on.",
+    });
+    return NextResponse.json({
+      settled: false,
+      status: "series_unlock",
+      amount: 0,
+      reasoning: "Included in your series pass — read on.",
+      seriesTitle: series.title,
+      chapterTitle: chapter.title ?? `Chapter ${chapter.chapter_number}`,
+      balance: Number(user.balance_usd),
+    });
+  }
 
   const valuation = await valueSession(
     {
