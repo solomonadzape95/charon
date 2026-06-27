@@ -1,15 +1,20 @@
 /**
- * Data layer for Charon v2. All writes go through the service-role client.
+ * Data layer for Charon v3 (reading platform).
+ * All writes go through the service-role client.
  */
 import { randomUUID } from "node:crypto";
 import {
   supabaseService,
+  type Chapter,
   type Creator,
-  type CreatorIdentity,
-  type IdentityPlatform,
-  type PendingTip,
-  type Tip,
-  type TipStatus,
+  type Follow,
+  type FollowMode,
+  type Loyalty,
+  type LoyaltyTier,
+  type Payment,
+  type PaymentStatus,
+  type Series,
+  type Session,
   type User,
 } from "@/lib/supabase";
 
@@ -19,178 +24,47 @@ export async function getUserById(id: string): Promise<User | null> {
   return (data as User) ?? null;
 }
 
-export async function getUserByTelegramId(telegramId: string): Promise<User | null> {
-  const { data } = await supabaseService()
-    .from("users")
-    .select("*")
-    .eq("telegram_id", telegramId)
-    .maybeSingle();
-  return (data as User) ?? null;
-}
-
 export async function getUserByEmail(email: string): Promise<User | null> {
   const { data } = await supabaseService().from("users").select("*").eq("email", email).maybeSingle();
   return (data as User) ?? null;
 }
 
-export async function getUserByLinkToken(token: string): Promise<User | null> {
-  const { data } = await supabaseService()
-    .from("users")
-    .select("*")
-    .eq("link_token", token)
-    .maybeSingle();
-  return (data as User) ?? null;
-}
-
-/** Create a reader (dashboard signup) with a fresh one-time Telegram link token. */
 export async function createUser(email: string): Promise<User> {
   const { data, error } = await supabaseService()
     .from("users")
-    .insert({ email, link_token: randomUUID() })
+    .insert({ email })
     .select()
     .single();
   if (error) throw new Error(error.message);
   return data as User;
 }
 
-export async function linkTelegram(linkToken: string, telegramId: string): Promise<User | null> {
-  const { data, error } = await supabaseService()
-    .from("users")
-    .update({ telegram_id: telegramId, link_token: null })
-    .eq("link_token", linkToken)
-    .select()
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data as User) ?? null;
+/** Credit/debit a reader's ledger balance atomically (throws on overdraw). */
+export async function adjustUserBalance(
+  userId: string,
+  deltaUsd: number,
+  kind: "deposit" | "session_debit" | "unlock_debit" | "refund",
+  refId?: string | null,
+): Promise<number> {
+  const db = supabaseService();
+  const user = await getUserById(userId);
+  if (!user) throw new Error("user not found");
+  const next = Number(user.balance_usd) + deltaUsd;
+  if (next < 0) throw new Error("insufficient balance");
+  await db.from("users").update({ balance_usd: next }).eq("id", userId);
+  await db.from("ledger").insert({ user_id: userId, kind, amount_usd: deltaUsd, ref_id: refId ?? null });
+  return next;
 }
 
-// ── creators + identity graph ──────────────────────────────
+// ── creators ───────────────────────────────────────────────
 export async function getCreatorById(id: string): Promise<Creator | null> {
   const { data } = await supabaseService().from("creators").select("*").eq("id", id).maybeSingle();
   return (data as Creator) ?? null;
 }
 
-export async function getCreatorByClaimToken(token: string): Promise<Creator | null> {
-  const { data } = await supabaseService()
-    .from("creators")
-    .select("*")
-    .eq("claim_token", token)
-    .maybeSingle();
+export async function getCreatorByEmail(email: string): Promise<Creator | null> {
+  const { data } = await supabaseService().from("creators").select("*").eq("email", email).maybeSingle();
   return (data as Creator) ?? null;
-}
-
-/**
- * Resolve the canonical creator for a set of identity signals, or create one.
- * Looks for an existing identity row matching any (platform, handle) pair;
- * if found, returns that creator. Otherwise creates a creator + identity rows.
- */
-export async function upsertCreatorByIdentities(args: {
-  name?: string | null;
-  email?: string | null;
-  walletAddress?: string | null;
-  identities: { platform: IdentityPlatform; handle: string; address?: string | null; confidence: number }[];
-}): Promise<Creator> {
-  const db = supabaseService();
-
-  // 1. Try to find an existing creator via any identity (platform, handle).
-  for (const id of args.identities) {
-    const { data: match } = await db
-      .from("creator_identities")
-      .select("creator_id")
-      .eq("platform", id.platform)
-      .eq("handle", id.handle)
-      .maybeSingle();
-    if (match?.creator_id) {
-      await attachIdentities(match.creator_id, args.identities);
-      if (args.walletAddress) await setCreatorWallet(match.creator_id, args.walletAddress);
-      return (await getCreatorById(match.creator_id))!;
-    }
-  }
-
-  // 2. None matched — create a fresh creator.
-  const { data: creator, error } = await db
-    .from("creators")
-    .insert({
-      name: args.name ?? null,
-      email: args.email ?? null,
-      wallet_address: args.walletAddress ?? null,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  await attachIdentities((creator as Creator).id, args.identities);
-  return creator as Creator;
-}
-
-export async function attachIdentities(
-  creatorId: string,
-  identities: { platform: IdentityPlatform; handle: string; address?: string | null; confidence: number }[],
-): Promise<void> {
-  if (!identities.length) return;
-  await supabaseService()
-    .from("creator_identities")
-    .upsert(
-      identities.map((i) => ({
-        creator_id: creatorId,
-        platform: i.platform,
-        handle: i.handle,
-        address: i.address ?? null,
-        confidence: i.confidence,
-      })),
-      { onConflict: "platform,handle", ignoreDuplicates: false },
-    );
-}
-
-export async function listCreatorIdentities(creatorId: string): Promise<CreatorIdentity[]> {
-  const { data } = await supabaseService()
-    .from("creator_identities")
-    .select("*")
-    .eq("creator_id", creatorId);
-  return (data as CreatorIdentity[]) ?? [];
-}
-
-/**
- * Registry read: return the ownership-verified identity row for a (platform, handle),
- * if any. This is what lets the agent route directly to a self-registered web2
- * creator instead of guessing a wallet on-chain.
- */
-export async function lookupVerifiedIdentity(
-  platform: IdentityPlatform,
-  handle: string,
-): Promise<CreatorIdentity | null> {
-  const { data } = await supabaseService()
-    .from("creator_identities")
-    .select("*")
-    .eq("platform", platform)
-    .eq("handle", handle)
-    .eq("verified", true)
-    .maybeSingle();
-  return (data as CreatorIdentity) ?? null;
-}
-
-export async function setCreatorWallet(creatorId: string, walletAddress: string): Promise<void> {
-  await supabaseService().from("creators").update({ wallet_address: walletAddress }).eq("id", creatorId);
-}
-
-// ── creator registry (self-registration + bio-code verification) ───────────
-export async function createCreator(fields: {
-  name?: string | null;
-  email?: string | null;
-  walletAddress?: string | null;
-  bio?: string | null;
-}): Promise<Creator> {
-  const { data, error } = await supabaseService()
-    .from("creators")
-    .insert({
-      name: fields.name ?? null,
-      email: fields.email ?? null,
-      wallet_address: fields.walletAddress ?? null,
-      bio: fields.bio ?? null,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data as Creator;
 }
 
 export async function getCreatorBySlug(slug: string): Promise<Creator | null> {
@@ -198,78 +72,31 @@ export async function getCreatorBySlug(slug: string): Promise<Creator | null> {
   return (data as Creator) ?? null;
 }
 
-/** Any identity row for (platform, handle), regardless of verified state. */
-export async function getIdentity(
-  platform: IdentityPlatform,
-  handle: string,
-): Promise<CreatorIdentity | null> {
-  const { data } = await supabaseService()
-    .from("creator_identities")
-    .select("*")
-    .eq("platform", platform)
-    .eq("handle", handle)
-    .maybeSingle();
-  return (data as CreatorIdentity) ?? null;
+export async function getCreatorByClaimToken(token: string): Promise<Creator | null> {
+  const { data } = await supabaseService().from("creators").select("*").eq("claim_token", token).maybeSingle();
+  return (data as Creator) ?? null;
 }
 
-export async function setCreatorProfile(
-  creatorId: string,
-  patch: Partial<Pick<Creator, "slug" | "bio" | "name" | "email">>,
-): Promise<void> {
-  await supabaseService().from("creators").update(patch).eq("id", creatorId);
-}
-
-/** Pick an available slug derived from a base string. */
-export async function uniqueSlug(base: string): Promise<string> {
-  const root = (base || "creator").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32) || "creator";
-  for (let i = 0; i < 50; i++) {
-    const candidate = i === 0 ? root : `${root}-${i + 1}`;
-    if (!(await getCreatorBySlug(candidate))) return candidate;
-  }
-  return `${root}-${randomUUID().slice(0, 6)}`;
-}
-
-/** Write/refresh the pending (unverified) registration row with its bio code. */
-export async function upsertRegistrationIdentity(args: {
-  creatorId: string;
-  platform: IdentityPlatform;
-  handle: string;
-  address: string;
-  code: string;
-}): Promise<void> {
-  await supabaseService()
-    .from("creator_identities")
-    .upsert(
-      {
-        creator_id: args.creatorId,
-        platform: args.platform,
-        handle: args.handle,
-        address: args.address,
-        confidence: 99,
-        verified: false,
-        verify_code: args.code,
-      },
-      { onConflict: "platform,handle", ignoreDuplicates: false },
-    );
-}
-
-/** Flip a pending registration to verified and promote it to the creator's payout wallet. */
-export async function markIdentityVerified(args: {
-  creatorId: string;
-  platform: IdentityPlatform;
-  handle: string;
-  address: string;
-}): Promise<void> {
-  const db = supabaseService();
-  await db
-    .from("creator_identities")
-    .update({ verified: true, verify_code: null })
-    .eq("platform", args.platform)
-    .eq("handle", args.handle);
-  await db
+export async function createCreator(fields: {
+  name?: string | null;
+  email?: string | null;
+  bio?: string | null;
+  walletAddress?: string | null;
+}): Promise<Creator> {
+  const slug = await uniqueSlug(fields.name ?? fields.email ?? "creator", "creators");
+  const { data, error } = await supabaseService()
     .from("creators")
-    .update({ registered: true, wallet_address: args.address })
-    .eq("id", args.creatorId);
+    .insert({
+      name: fields.name ?? null,
+      email: fields.email ?? null,
+      bio: fields.bio ?? null,
+      slug,
+      wallet_address: fields.walletAddress ?? null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Creator;
 }
 
 export async function setCreatorCircleWallet(
@@ -283,147 +110,328 @@ export async function setCreatorCircleWallet(
     .eq("id", creatorId);
 }
 
+/** Accrue escrow + lifetime earnings for a creator. */
 export async function adjustCreatorBalance(creatorId: string, deltaUsd: number): Promise<void> {
   const c = await getCreatorById(creatorId);
   if (!c) return;
   await supabaseService()
     .from("creators")
-    .update({ balance_usd: Number(c.balance_usd) + deltaUsd })
+    .update({
+      balance_usd: Number(c.balance_usd) + deltaUsd,
+      total_earned_usdc: Number(c.total_earned_usdc) + Math.max(0, deltaUsd),
+    })
     .eq("id", creatorId);
 }
 
 export async function markCreatorClaimed(creatorId: string): Promise<void> {
-  await supabaseService()
-    .from("creators")
-    .update({ claimed: true, balance_usd: 0 })
-    .eq("id", creatorId);
+  await supabaseService().from("creators").update({ claimed: true, balance_usd: 0 }).eq("id", creatorId);
 }
 
-// ── tips ───────────────────────────────────────────────────
-export async function createTip(input: {
-  userId: string | null;
-  creatorId: string | null;
-  url: string;
-  platform?: string | null;
-  amountUsd: number;
-  status?: TipStatus;
-  confidence?: number | null;
-  agentReasoning?: string | null;
-}): Promise<Tip> {
+// ── series ─────────────────────────────────────────────────
+export async function createSeries(input: {
+  creatorId: string;
+  title: string;
+  description?: string | null;
+  genre?: string | null;
+  coverImage?: string | null;
+}): Promise<Series> {
+  const slug = await uniqueSlug(input.title, "series");
   const { data, error } = await supabaseService()
-    .from("tips")
+    .from("series")
     .insert({
-      user_id: input.userId,
       creator_id: input.creatorId,
-      url: input.url,
-      platform: input.platform ?? null,
-      amount_usd: input.amountUsd,
-      status: input.status ?? "pending_confirmation",
-      confidence: input.confidence ?? null,
-      agent_reasoning: input.agentReasoning ?? null,
+      title: input.title,
+      slug,
+      description: input.description ?? null,
+      genre: input.genre ?? null,
+      cover_image: input.coverImage ?? null,
     })
     .select()
     .single();
   if (error) throw new Error(error.message);
-  return data as Tip;
+  return data as Series;
 }
 
-export async function updateTip(
-  id: string,
-  patch: Partial<Pick<Tip, "status" | "tx_hash" | "creator_id" | "amount_usd">>,
-): Promise<void> {
-  await supabaseService().from("tips").update(patch).eq("id", id);
+export async function getSeriesById(id: string): Promise<Series | null> {
+  const { data } = await supabaseService().from("series").select("*").eq("id", id).maybeSingle();
+  return (data as Series) ?? null;
 }
 
-export async function listTipsForUser(userId: string, limit = 10): Promise<Tip[]> {
+export async function listSeries(limit = 50): Promise<Series[]> {
   const { data } = await supabaseService()
-    .from("tips")
+    .from("series")
+    .select("*")
+    .order("momentum_score", { ascending: false })
+    .limit(limit);
+  return (data as Series[]) ?? [];
+}
+
+export async function listSeriesForCreator(creatorId: string): Promise<Series[]> {
+  const { data } = await supabaseService()
+    .from("series")
+    .select("*")
+    .eq("creator_id", creatorId)
+    .order("created_at", { ascending: false });
+  return (data as Series[]) ?? [];
+}
+
+export async function updateSeries(id: string, patch: Partial<Series>): Promise<void> {
+  await supabaseService().from("series").update(patch).eq("id", id);
+}
+
+// ── chapters ───────────────────────────────────────────────
+export async function createChapter(input: {
+  seriesId: string;
+  chapterNumber: number;
+  title?: string | null;
+  contentType: "text" | "images";
+  content: string;
+  wordCount: number;
+  floorPrice: number;
+  basePrice: number;
+  currentPrice: number;
+  earlyAccessPrice?: number | null;
+  earlyAccessReleaseAt?: string | null;
+}): Promise<Chapter> {
+  const { data, error } = await supabaseService()
+    .from("chapters")
+    .insert({
+      series_id: input.seriesId,
+      chapter_number: input.chapterNumber,
+      title: input.title ?? null,
+      content_type: input.contentType,
+      content: input.content,
+      word_count: input.wordCount,
+      floor_price_usdc: input.floorPrice,
+      base_price_usdc: input.basePrice,
+      current_price_usdc: input.currentPrice,
+      early_access_price_usdc: input.earlyAccessPrice ?? null,
+      early_access_release_at: input.earlyAccessReleaseAt ?? null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Chapter;
+}
+
+export async function getChapterById(id: string): Promise<Chapter | null> {
+  const { data } = await supabaseService().from("chapters").select("*").eq("id", id).maybeSingle();
+  return (data as Chapter) ?? null;
+}
+
+export async function listChapters(seriesId: string): Promise<Chapter[]> {
+  const { data } = await supabaseService()
+    .from("chapters")
+    .select("*")
+    .eq("series_id", seriesId)
+    .order("chapter_number", { ascending: true });
+  return (data as Chapter[]) ?? [];
+}
+
+export async function listAllChapters(limit = 500): Promise<Chapter[]> {
+  const { data } = await supabaseService().from("chapters").select("*").limit(limit);
+  return (data as Chapter[]) ?? [];
+}
+
+export async function updateChapter(id: string, patch: Partial<Chapter>): Promise<void> {
+  await supabaseService().from("chapters").update(patch).eq("id", id);
+}
+
+export async function nextChapterNumber(seriesId: string): Promise<number> {
+  const { data } = await supabaseService()
+    .from("chapters")
+    .select("chapter_number")
+    .eq("series_id", seriesId)
+    .order("chapter_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return ((data as { chapter_number: number } | null)?.chapter_number ?? 0) + 1;
+}
+
+// ── sessions ───────────────────────────────────────────────
+export async function createSession(input: {
+  userId: string;
+  chapterId: string;
+  bingeDepth: number;
+}): Promise<Session> {
+  const { data, error } = await supabaseService()
+    .from("sessions")
+    .insert({ user_id: input.userId, chapter_id: input.chapterId, binge_depth: input.bingeDepth })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Session;
+}
+
+export async function getSessionById(id: string): Promise<Session | null> {
+  const { data } = await supabaseService().from("sessions").select("*").eq("id", id).maybeSingle();
+  return (data as Session) ?? null;
+}
+
+export async function finalizeSession(id: string, patch: Partial<Session>): Promise<void> {
+  await supabaseService().from("sessions").update(patch).eq("id", id);
+}
+
+export async function listSessionsForUser(userId: string, limit = 50): Promise<Session[]> {
+  const { data } = await supabaseService()
+    .from("sessions")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(limit);
-  return (data as Tip[]) ?? [];
+  return (data as Session[]) ?? [];
 }
 
-/** Public aggregate for a creator profile: count + total of received tips. */
-export async function getCreatorPublicStats(
-  creatorId: string,
-): Promise<{ tipCount: number; totalUsd: number }> {
-  const { data } = await supabaseService()
-    .from("tips")
-    .select("amount_usd, status")
-    .eq("creator_id", creatorId)
-    .in("status", ["sent", "escrowed", "claimed"]);
-  const rows = (data as { amount_usd: number }[]) ?? [];
-  return {
-    tipCount: rows.length,
-    totalUsd: rows.reduce((s, r) => s + Number(r.amount_usd), 0),
-  };
+/** How many distinct chapters of this series the reader has previously read (for re-read detection). */
+export async function priorReadsOfChapter(userId: string, chapterId: string): Promise<number> {
+  const { count } = await supabaseService()
+    .from("sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("chapter_id", chapterId)
+    .not("ended_at", "is", null);
+  return count ?? 0;
 }
 
-export async function listTipsForCreator(creatorId: string, limit = 50): Promise<Tip[]> {
-  const { data } = await supabaseService()
-    .from("tips")
-    .select("*")
-    .eq("creator_id", creatorId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  return (data as Tip[]) ?? [];
-}
-
-// ── ledger (reader balance) ────────────────────────────────
-export async function adjustUserBalance(
-  userId: string,
-  deltaUsd: number,
-  kind: "deposit" | "tip_debit" | "refund",
-  tipId?: string | null,
-): Promise<number> {
-  const db = supabaseService();
-  const user = await getUserById(userId);
-  if (!user) throw new Error("user not found");
-  const next = Number(user.balance_usd) + deltaUsd;
-  if (next < 0) throw new Error("insufficient balance");
-  await db.from("users").update({ balance_usd: next }).eq("id", userId);
-  await db.from("ledger").insert({ user_id: userId, kind, amount_usd: deltaUsd, tip_id: tipId ?? null });
-  return next;
-}
-
-// ── pending tips (Telegram confirmation state) ─────────────
-export async function createPendingTip(input: {
-  telegramId: string;
-  chatId: string;
-  url: string;
-  comment?: string | null;
-  suggestedAmount: number;
-  creatorId?: string | null;
-  confidence?: number | null;
-  action?: string | null;
-  agentReasoning?: string | null;
-}): Promise<PendingTip> {
+// ── payments ───────────────────────────────────────────────
+export async function recordPayment(input: {
+  sessionId?: string | null;
+  userId: string;
+  creatorId: string;
+  chapterId: string;
+  amountUsdc: number;
+  status?: PaymentStatus;
+  arcTxHash?: string | null;
+}): Promise<Payment> {
   const { data, error } = await supabaseService()
-    .from("pending_tips")
+    .from("payments")
     .insert({
-      telegram_id: input.telegramId,
-      chat_id: input.chatId,
-      url: input.url,
-      comment: input.comment ?? null,
-      suggested_amount: input.suggestedAmount,
-      creator_id: input.creatorId ?? null,
-      confidence: input.confidence ?? null,
-      action: input.action ?? null,
-      agent_reasoning: input.agentReasoning ?? null,
+      session_id: input.sessionId ?? null,
+      user_id: input.userId,
+      creator_id: input.creatorId,
+      chapter_id: input.chapterId,
+      amount_usdc: input.amountUsdc,
+      status: input.status ?? "pending",
+      arc_tx_hash: input.arcTxHash ?? null,
     })
     .select()
     .single();
   if (error) throw new Error(error.message);
-  return data as PendingTip;
+  return data as Payment;
 }
 
-export async function getPendingTip(id: string): Promise<PendingTip | null> {
-  const { data } = await supabaseService().from("pending_tips").select("*").eq("id", id).maybeSingle();
-  return (data as PendingTip) ?? null;
+export async function updatePayment(id: string, patch: Partial<Payment>): Promise<void> {
+  await supabaseService().from("payments").update(patch).eq("id", id);
 }
 
-export async function deletePendingTip(id: string): Promise<void> {
-  await supabaseService().from("pending_tips").delete().eq("id", id);
+export async function listPaymentsForCreator(creatorId: string, limit = 100): Promise<Payment[]> {
+  const { data } = await supabaseService()
+    .from("payments")
+    .select("*")
+    .eq("creator_id", creatorId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data as Payment[]) ?? [];
+}
+
+// ── follows ────────────────────────────────────────────────
+export async function getFollow(userId: string, seriesId: string): Promise<Follow | null> {
+  const { data } = await supabaseService()
+    .from("follows")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("series_id", seriesId)
+    .maybeSingle();
+  return (data as Follow) ?? null;
+}
+
+export async function setFollowMode(userId: string, seriesId: string, mode: FollowMode): Promise<void> {
+  await supabaseService()
+    .from("follows")
+    .upsert({ user_id: userId, series_id: seriesId, mode }, { onConflict: "user_id,series_id" });
+}
+
+export async function listFollowsForUser(userId: string): Promise<Follow[]> {
+  const { data } = await supabaseService().from("follows").select("*").eq("user_id", userId);
+  return (data as Follow[]) ?? [];
+}
+
+export async function listSubscribers(seriesId: string, mode: FollowMode): Promise<Follow[]> {
+  const { data } = await supabaseService()
+    .from("follows")
+    .select("*")
+    .eq("series_id", seriesId)
+    .eq("mode", mode);
+  return (data as Follow[]) ?? [];
+}
+
+// ── loyalty ────────────────────────────────────────────────
+export async function getOrCreateLoyalty(userId: string, seriesId: string): Promise<Loyalty> {
+  const db = supabaseService();
+  const { data: existing } = await db
+    .from("loyalty")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("series_id", seriesId)
+    .maybeSingle();
+  if (existing) return existing as Loyalty;
+  const { data, error } = await db
+    .from("loyalty")
+    .insert({ user_id: userId, series_id: seriesId })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Loyalty;
+}
+
+function tierFor(chaptersRead: number): LoyaltyTier {
+  if (chaptersRead >= 100) return "devotee";
+  if (chaptersRead >= 20) return "loyal";
+  if (chaptersRead >= 5) return "reader";
+  return "new";
+}
+
+/** Increment a reader's loyalty after a settled session. */
+export async function bumpLoyalty(userId: string, seriesId: string, spentUsd: number): Promise<Loyalty> {
+  const cur = await getOrCreateLoyalty(userId, seriesId);
+  const chaptersRead = cur.chapters_read + 1;
+  const totalSpent = Number(cur.total_spent_usdc) + spentUsd;
+  const patch = {
+    chapters_read: chaptersRead,
+    total_spent_usdc: totalSpent,
+    loyalty_tier: tierFor(chaptersRead),
+  };
+  await supabaseService().from("loyalty").update(patch).eq("id", cur.id);
+  return { ...cur, ...patch };
+}
+
+// ── price history ──────────────────────────────────────────
+export async function logPriceChange(input: {
+  chapterId: string;
+  oldPrice: number;
+  newPrice: number;
+  reason: string;
+  signals?: Record<string, unknown>;
+}): Promise<void> {
+  await supabaseService().from("price_history").insert({
+    chapter_id: input.chapterId,
+    old_price_usdc: input.oldPrice,
+    new_price_usdc: input.newPrice,
+    reason: input.reason,
+    signals_json: input.signals ?? null,
+  });
+}
+
+// ── helpers ────────────────────────────────────────────────
+/** Pick an available slug derived from a base string, unique within `table`. */
+export async function uniqueSlug(base: string, table: "creators" | "series"): Promise<string> {
+  const root =
+    (base || table).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || table;
+  const db = supabaseService();
+  for (let i = 0; i < 50; i++) {
+    const candidate = i === 0 ? root : `${root}-${i + 1}`;
+    const { data } = await db.from(table).select("id").eq("slug", candidate).maybeSingle();
+    if (!data) return candidate;
+  }
+  return `${root}-${randomUUID().slice(0, 6)}`;
 }

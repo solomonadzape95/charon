@@ -3,25 +3,22 @@
 import { useEffect, useState } from "react";
 
 interface Stats {
-  totalTips: number;
+  chaptersRead: number;
   totalUsdc: number;
   creators: number;
+  earningCreators: number;
   readers: number;
-  direct: { count: number; usdc: number };
-  escrow: { count: number; usdc: number };
-  claimed: { count: number; usdc: number };
-  claimRate: number;
-  paidCreators: number;
-  recent: { amount_usd: number; status: string; platform: string | null; url: string; created_at: string }[];
+  series: number;
+  chapters: number;
+  topCreators: { name: string | null; slug: string | null; earned: number }[];
+  recent: { reasoning: string | null; amount: number; created_at: string }[];
 }
 
 function Big({ value, label, accent }: { value: string; label: string; accent?: string }) {
   return (
     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-5">
-      <div className="text-3xl font-semibold" style={accent ? { color: accent } : undefined}>
-        {value}
-      </div>
-      <div className="mt-1 text-xs uppercase tracking-wide text-[var(--color-muted)]">{label}</div>
+      <p className={`text-3xl font-bold ${accent ?? ""}`}>{value}</p>
+      <p className="mt-1 text-sm text-[var(--color-muted)]">{label}</p>
     </div>
   );
 }
@@ -30,54 +27,64 @@ export default function StatsPage() {
   const [s, setS] = useState<Stats | null>(null);
 
   useEffect(() => {
-    const load = () => fetch("/api/stats").then((r) => r.json()).then(setS).catch(() => {});
-    load();
-    const t = setInterval(load, 5000); // light polling keeps it live during the demo
+    const tick = () => fetch("/api/stats").then((r) => r.json()).then(setS).catch(() => {});
+    tick();
+    const t = setInterval(tick, 5000);
     return () => clearInterval(t);
   }, []);
 
-  if (!s) return <p className="pt-10 text-center text-[var(--color-muted)]">Loading…</p>;
+  if (!s) return <p className="text-sm text-[var(--color-muted)]">Loading live stats…</p>;
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-2">
-        <span className="h-2 w-2 rounded-full bg-[var(--color-accent-2)] pulse-dot" />
-        <h1 className="text-2xl font-semibold">Live stats</h1>
+      <div>
+        <h1 className="text-2xl font-bold">Live on Arc</h1>
+        <p className="text-sm text-[var(--color-muted)]">Settled USDC across the platform, updating in real time.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Big value={`$${s.totalUsdc.toFixed(2)}`} label="USDC settled on Arc" accent="var(--color-gold)" />
-        <Big value={String(s.totalTips)} label="Tips sent" />
-        <Big value={String(s.paidCreators)} label="Creators paid" accent="var(--color-accent-2)" />
-        <Big value={`${Math.round(s.claimRate * 100)}%`} label="Escrow claim rate" accent="var(--color-accent)" />
+        <Big value={`$${s.totalUsdc.toFixed(2)}`} label="USDC settled on Arc" accent="text-[var(--color-gold)]" />
+        <Big value={`${s.chaptersRead}`} label="Chapters read & paid" />
+        <Big value={`${s.earningCreators}`} label="Creators earning" />
+        <Big value={`${s.readers}`} label="Readers" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Big value={`${s.direct.count} · $${s.direct.usdc.toFixed(2)}`} label="Routed directly" />
-        <Big value={`${s.escrow.count} · $${s.escrow.usdc.toFixed(2)}`} label="Held in escrow" />
-        <Big value={`${s.claimed.count} · $${s.claimed.usdc.toFixed(2)}`} label="Claimed" />
-      </div>
-
-      <div>
-        <h3 className="mb-3 font-semibold">Recent activity</h3>
-        {s.recent.length === 0 ? (
-          <p className="text-sm text-[var(--color-muted)]">No tips yet.</p>
-        ) : (
-          <div className="space-y-1 text-sm">
-            {s.recent.map((r, i) => (
-              <div
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Top earning creators</h2>
+          <ul className="space-y-2">
+            {s.topCreators.map((c, i) => (
+              <li
                 key={i}
-                className="flex items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2"
+                className="flex items-center justify-between rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-[var(--color-muted)]">{r.status === "sent" ? "✅" : r.status === "escrowed" ? "📩" : "🎉"}</span>
-                  <span className="max-w-[360px] truncate text-[var(--color-muted)]">{r.url}</span>
-                </div>
-                <span className="font-medium">${Number(r.amount_usd).toFixed(2)}</span>
-              </div>
+                <span className="text-sm font-medium">{c.name ?? c.slug ?? "Anonymous"}</span>
+                <span className="text-sm font-semibold text-[var(--color-gold)]">${c.earned.toFixed(2)}</span>
+              </li>
             ))}
-          </div>
-        )}
+            {s.topCreators.length === 0 && (
+              <li className="text-sm text-[var(--color-muted)]">No earnings yet.</li>
+            )}
+          </ul>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Recent agent settlements</h2>
+          <ul className="space-y-2">
+            {s.recent.map((r, i) => (
+              <li key={i} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-[var(--color-gold)]">${r.amount.toFixed(2)}</span>
+                  <span className="text-xs text-[var(--color-muted)]">
+                    {new Date(r.created_at).toLocaleTimeString()}
+                  </span>
+                </div>
+                {r.reasoning && <p className="mt-1 text-xs text-[var(--color-muted)]">{r.reasoning}</p>}
+              </li>
+            ))}
+            {s.recent.length === 0 && <li className="text-sm text-[var(--color-muted)]">No sessions yet.</li>}
+          </ul>
+        </section>
       </div>
     </div>
   );

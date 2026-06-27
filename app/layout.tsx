@@ -3,15 +3,16 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Charon — tip any creator on the internet, instantly",
+  title: "Charon — read freely, pay fairly",
   description:
-    "An AI agent that lets you send instant nanopayments to any creator on the internet — even if they've never signed up. Settled in under 500ms on Arc.",
+    "A nanopayment reading platform where AI agents settle what every chapter was truly worth. Read webnovels and manga; value flows automatically to creators on Arc.",
 };
 
 function Nav() {
   const links = [
+    { href: "/read", label: "Browse" },
+    { href: "/creator", label: "For creators" },
     { href: "/dashboard", label: "Dashboard" },
-    { href: "/register", label: "For creators" },
     { href: "/stats", label: "Live stats" },
   ];
   return (
