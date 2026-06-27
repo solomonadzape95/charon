@@ -99,6 +99,10 @@ export async function createCreator(fields: {
   return data as Creator;
 }
 
+export async function setCreatorWallet(creatorId: string, walletAddress: string): Promise<void> {
+  await supabaseService().from("creators").update({ wallet_address: walletAddress }).eq("id", creatorId);
+}
+
 export async function setCreatorCircleWallet(
   creatorId: string,
   circleWalletId: string,

@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCreator, getCreatorByEmail, getCreatorById } from "@/lib/db";
+import { createCreator, getCreatorByEmail, getCreatorById, setCreatorWallet } from "@/lib/db";
 
 export const runtime = "nodejs";
 
 /**
- * Creator signup / lookup.
- *   POST /api/creators { email, name?, walletAddress? }  → create or return creator
- *   GET  /api/creators?id=<uuid>                          → creator state
+ * Creator signup / lookup / wallet update.
+ *   POST  /api/creators { email, name?, walletAddress? }  → create or return creator
+ *   GET   /api/creators?id=<uuid>                          → creator state
+ *   PATCH /api/creators { id, walletAddress }              → set payout wallet
  */
+export async function PATCH(req: NextRequest) {
+  let body: { id?: string; walletAddress?: string } = {};
+  try {
+    body = await req.json();
+  } catch {
+    /* ignore */
+  }
+  const { id, walletAddress } = body;
+  if (!id || !walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+    return NextResponse.json({ error: "id and valid 0x walletAddress required" }, { status: 400 });
+  }
+  const creator = await getCreatorById(id);
+  if (!creator) return NextResponse.json({ error: "not found" }, { status: 404 });
+  await setCreatorWallet(id, walletAddress);
+  return NextResponse.json({ creator: { ...creator, wallet_address: walletAddress } });
+}
 export async function POST(req: NextRequest) {
   let body: { email?: string; name?: string; walletAddress?: string } = {};
   try {
