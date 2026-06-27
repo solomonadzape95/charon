@@ -97,8 +97,18 @@ because the canals were wide, and the fog was deep, and someone, always, had bee
   },
 ];
 
+// Established-hit prices for Iron Ascension (creator-set), so dynamic repricing
+// is visibly demonstrable. The Lantern Court stays agent-priced at floor — the
+// "new series priced to attract readers" story.
+const ironPrices = [0.06, 0.07, 0.08, 0.09, 0.1];
+
 async function main() {
   console.log(`Seeding ${BASE} ...`);
+
+  // Idempotent: clear prior demo data so re-seeding is clean.
+  await post("/api/admin/reset", {
+    emails: ["demo-creator@paywithcharon.xyz", "demo-reader@paywithcharon.xyz"],
+  }).catch(() => console.log("(reset skipped)"));
 
   const { creator } = await post("/api/creators", {
     email: "demo-creator@paywithcharon.xyz",
@@ -120,8 +130,15 @@ async function main() {
   });
   console.log("series:", iron.title, "/", lantern.title);
 
-  for (const ch of ironChapters) {
-    const r = await post("/api/chapters", { seriesId: iron.id, title: ch.title, contentType: "text", content: ch.text });
+  for (let i = 0; i < ironChapters.length; i++) {
+    const ch = ironChapters[i];
+    const r = await post("/api/chapters", {
+      seriesId: iron.id,
+      title: ch.title,
+      contentType: "text",
+      content: ch.text,
+      overrideBasePrice: ironPrices[i],
+    });
     console.log(`  ${iron.title} — ${ch.title}: $${Number(r.chapter.base_price_usdc).toFixed(2)} (${r.pricingReasoning})`);
   }
   for (const ch of lanternChapters) {

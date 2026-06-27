@@ -87,7 +87,8 @@ chapter, and watch the session summary + the creator dashboard balance tick up l
 - `npm run generate-wallets` — create the Arc treasury wallet
 - `npm run fund-gateway` — top up the treasury's x402 Gateway deposit
 - `npm run settle-smoke` — prove the Arc settlement rail end-to-end
-- `npm run seed` — seed demo creator, series, chapters, and a funded reader
+- `npm run seed` — seed demo creator, series, chapters, and a funded reader (idempotent)
+- `npm run demo-pricing` — simulate demand on a chapter and watch Agent 3 move its price (capped at ±20%)
 
 ### Cron (Vercel)
 `vercel.json` schedules Agent 3 (`/api/cron/reprice`, hourly) and Agent 4
