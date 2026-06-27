@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AuthForm } from "@/components/AuthForm";
+import { useRouter } from "next/navigation";
+import { SubNav } from "@/components/SubNav";
 
 interface Creator {
   id: string;
@@ -22,29 +23,34 @@ interface Series {
 const LS_KEY = "charon_creator_id";
 
 export default function CreatorHub() {
+  const router = useRouter();
   const [creator, setCreator] = useState<Creator | null>(null);
   const [series, setSeries] = useState<Series[]>([]);
   const [sform, setSform] = useState({ title: "", genre: "", description: "" });
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async (id: string) => {
-    const [c, s] = await Promise.all([
-      fetch(`/api/creators?id=${id}`).then((r) => (r.ok ? r.json() : null)),
-      fetch(`/api/series?creatorId=${id}`).then((r) => r.json()),
-    ]);
-    if (!c?.creator) {
-      localStorage.removeItem(LS_KEY);
-      setCreator(null);
-      return;
-    }
-    setCreator(c.creator);
-    setSeries(s.series ?? []);
-  }, []);
+  const load = useCallback(
+    async (id: string) => {
+      const [c, s] = await Promise.all([
+        fetch(`/api/creators?id=${id}`).then((r) => (r.ok ? r.json() : null)),
+        fetch(`/api/series?creatorId=${id}`).then((r) => r.json()),
+      ]);
+      if (!c?.creator) {
+        localStorage.removeItem(LS_KEY);
+        router.replace("/creator/join");
+        return;
+      }
+      setCreator(c.creator);
+      setSeries(s.series ?? []);
+    },
+    [router],
+  );
 
   useEffect(() => {
     const id = localStorage.getItem(LS_KEY);
     if (id) load(id);
-  }, [load]);
+    else router.replace("/creator/join");
+  }, [load, router]);
 
   async function createSeries(e: React.FormEvent) {
     e.preventDefault();
@@ -66,21 +72,15 @@ export default function CreatorHub() {
     }
   }
 
-  if (!creator) {
-    return (
-      <div className="grid min-h-[calc(100vh-4.5rem)] place-items-center px-6 py-16">
-        <div className="fade-up">
-          <AuthForm role="creator" onAuthed={(id) => load(id)} />
-        </div>
-      </div>
-    );
-  }
+  if (!creator) return null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-6 py-12">
+    <>
+      <SubNav role="creator" />
+      <div className="mx-auto max-w-6xl space-y-8 px-6 py-10">
       <section className="flex items-end justify-between border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <div>
-          <p className="text-sm text-[var(--color-muted)]">Claimable earnings</p>
+          <p className="text-utility text-[var(--color-muted)]">Claimable earnings</p>
           <p className="text-4xl font-bold text-[var(--color-gold)]">${Number(creator.balance_usd).toFixed(2)}</p>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
             ${Number(creator.total_earned_usdc).toFixed(2)} earned all-time · {creator.name ?? creator.email}
@@ -150,6 +150,7 @@ export default function CreatorHub() {
           </button>
         </form>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

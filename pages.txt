@@ -1,0 +1,199 @@
+Reader Experience
+1. Home
+
+Purpose:
+
+Discover new stories
+Continue reading
+Personalized recommendations
+
+Sections:
+
+Continue Reading
+Trending
+New Releases
+Recommended for You
+Genres
+AI Picks
+"Recently Rewarded Stories"
+Reading Streak
+2. Library
+
+Contains:
+
+Saved Books
+Reading History
+Downloads
+Favorites
+Collections
+3. Discover
+
+Think Spotify Explore.
+
+Features:
+
+Search
+Genres
+Tags
+Mood
+Length
+New Authors
+AI Recommendations
+Editor's Picks
+4. Reading Page
+
+The heart of the app.
+
+Contains:
+
+Title
+Author
+Progress
+Font controls
+Theme
+Reading timer
+AI Summary
+Highlight
+Notes
+Bookmark
+
+At the bottom:
+
+❤️ Reward this chapter
+
+Suggested buttons:
+
+5¢
+10¢
+25¢
+Custom
+5. Rewards
+
+Shows:
+
+Tips sent
+Favorite creators
+Monthly support
+Creator milestones
+
+Makes readers feel like patrons.
+
+6. Inbox
+
+Notifications:
+
+Creator replied
+New chapter
+Creator claimed your reward
+Reading achievements
+7. Wallet
+
+Shows:
+
+Balance
+Deposit
+Transactions
+Rewards sent
+Rewards received (if creator)
+8. Profile
+
+Contains:
+
+Avatar
+Reading stats
+Favorite genres
+Badges
+Reading streak
+Settings
+Creator Experience
+
+Different home.
+
+1. Creator Dashboard
+
+Shows:
+
+Revenue today
+Readers
+Tips
+New followers
+Active stories
+
+Charts:
+
+Earnings
+Reads
+Completion
+Tips over time
+2. Stories
+
+Manage:
+
+Drafts
+Published
+Scheduled
+Archived
+3. Editor
+
+Rich editor.
+
+Features:
+
+Markdown
+AI proofreading
+AI title suggestions
+AI cover generation
+Publish
+4. Analytics
+
+Metrics:
+
+Reads
+Chapter drop-off
+Reading time
+Tip conversion
+Popular chapters
+Reader retention
+5. Rewards
+
+Shows:
+
+Tip history
+Escrow balance
+Withdraw
+Claim rewards
+6. Audience
+
+Contains:
+
+Followers
+Top supporters
+Comments
+Messages
+7. AI Assistant
+
+Creator asks:
+
+Which chapter loses readers?
+
+Which chapter receives the most tips?
+
+Suggest a better title.
+
+8. Profile
+
+Contains:
+
+Bio
+Wallet
+Socials
+Published works
+Shared Pages
+
+Both users get:
+
+Settings
+Notifications
+Search
+Wallet
+Help

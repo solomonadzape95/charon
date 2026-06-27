@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabaseAnon } from "@/lib/supabase";
+import { SubNav } from "@/components/SubNav";
 
 interface Earnings {
   creator: { id: string; name: string | null; balance_usd: number; total_earned_usdc: number; wallet_address: string | null };
@@ -58,7 +59,9 @@ export default function CreatorDashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-6 py-12">
+    <>
+      <SubNav role="creator" />
+      <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
       <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <p className="text-utility text-[var(--color-muted)]">Claimable balance · live</p>
         <p
@@ -104,6 +107,7 @@ export default function CreatorDashboard() {
           </ul>
         )}
       </section>
-    </div>
+      </div>
+    </>
   );
 }

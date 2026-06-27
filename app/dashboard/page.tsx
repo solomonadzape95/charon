@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AuthForm } from "@/components/AuthForm";
+import { useRouter } from "next/navigation";
+import { SubNav } from "@/components/SubNav";
 
 interface User {
   id: string;
@@ -32,26 +33,30 @@ interface Budget {
 const LS_KEY = "charon_user_id";
 
 export default function Dashboard() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [budget, setBudget] = useState<Budget | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async (id: string) => {
-    const res = await fetch(`/api/me/sessions?userId=${id}`);
-    if (!res.ok) {
-      localStorage.removeItem(LS_KEY);
-      setUser(null);
-      return;
-    }
-    const data = await res.json();
-    setUser(data.user);
-    setSessions(data.sessions ?? []);
-    fetch(`/api/me/budget?userId=${id}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((b) => b && setBudget(b))
-      .catch(() => {});
-  }, []);
+  const load = useCallback(
+    async (id: string) => {
+      const res = await fetch(`/api/me/sessions?userId=${id}`);
+      if (!res.ok) {
+        localStorage.removeItem(LS_KEY);
+        router.replace("/join");
+        return;
+      }
+      const data = await res.json();
+      setUser(data.user);
+      setSessions(data.sessions ?? []);
+      fetch(`/api/me/budget?userId=${id}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((b) => b && setBudget(b))
+        .catch(() => {});
+    },
+    [router],
+  );
 
   async function enablePreRelease(seriesId: string) {
     if (!user) return;
@@ -66,7 +71,8 @@ export default function Dashboard() {
   useEffect(() => {
     const id = localStorage.getItem(LS_KEY);
     if (id) load(id);
-  }, [load]);
+    else router.replace("/join");
+  }, [load, router]);
 
   async function deposit(amount: number) {
     if (!user) return;
@@ -84,18 +90,12 @@ export default function Dashboard() {
     }
   }
 
-  if (!user) {
-    return (
-      <div className="grid min-h-[calc(100vh-4.5rem)] place-items-center px-6 py-16">
-        <div className="fade-up">
-          <AuthForm role="reader" onAuthed={(id) => load(id)} />
-        </div>
-      </div>
-    );
-  }
+  if (!user) return null;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-6 py-12">
+    <>
+      <SubNav role="reader" />
+      <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
       <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <div className="flex items-end justify-between">
           <div>
@@ -187,6 +187,7 @@ export default function Dashboard() {
           </ul>
         )}
       </section>
-    </div>
+      </div>
+    </>
   );
 }
