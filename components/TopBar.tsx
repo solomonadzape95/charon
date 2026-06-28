@@ -3,12 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useScrollHide } from "@/lib/use-scroll-hide";
 
-const HIDDEN_ON = ["/join", "/creator/join"];
+// App surfaces render their own AccountNav header, so the marketing TopBar is
+// hidden there. The /creator marketing landing keeps it; /creator/* app pages don't.
+const HIDDEN_PREFIXES = ["/join", "/onboarding", "/dashboard", "/library", "/wallet", "/read", "/chapter", "/profile", "/series", "/admin"];
+
+function isHidden(pathname: string) {
+  if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;
+  if (pathname.startsWith("/creator/")) return true; // creator app pages (not the /creator landing)
+  return false;
+}
 
 export function TopBar() {
   const pathname = usePathname();
-  if (HIDDEN_ON.includes(pathname)) return null;
+  const hidden = useScrollHide();
+  if (isHidden(pathname)) return null;
 
   const links = [
     { href: "/read", label: "Browse" },
@@ -16,11 +27,15 @@ export function TopBar() {
     { href: "/stats", label: "Live" },
   ];
   return (
-    <header className="sticky top-0 z-40 bg-[color-mix(in_srgb,var(--color-bg)_80%,transparent)] backdrop-blur">
+    <header
+      className={`sticky top-0 z-40 bg-[color-mix(in_srgb,var(--color-bg)_80%,transparent)] backdrop-blur transition-transform duration-300 ${
+        hidden ? "-translate-y-full" : "translate-y-0"
+      }`}
+    >
       <nav className="mx-auto flex max-w-[88rem] items-center justify-between px-6 py-4 lg:px-10">
         <Link href="/" className="flex items-center gap-2.5" aria-label="Charon">
-          <Logo size={46} className="text-[var(--color-gold)]" />
-          <span className="font-display text-3xl font-semibold tracking-tight text-coin">Charon</span>
+          <Logo size={42} className="text-[var(--color-gold)]" />
+          <span className="font-display hidden text-3xl font-semibold tracking-tight text-coin sm:inline">Charon</span>
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           {links.map((l) => (
@@ -32,6 +47,7 @@ export function TopBar() {
               {l.label}
             </Link>
           ))}
+          <ThemeToggle />
           <Link href="/dashboard" className="btn-outline hidden md:inline-flex">
             Sign in
           </Link>

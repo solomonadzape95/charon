@@ -17,24 +17,24 @@ export async function GET(req: NextRequest) {
 
   const { data: follows } = await db
     .from("follows")
-    .select("mode, series ( id, title, genre, status )")
+    .select("mode, series ( id, slug, title, genre, status, cover_image )")
     .eq("user_id", userId);
 
   const { data: sessions } = await db
     .from("sessions")
-    .select("created_at, chapters ( series ( id, title ) )")
+    .select("created_at, chapters ( series ( id, slug, title, genre, cover_image ) )")
     .eq("user_id", userId)
     .not("ended_at", "is", null)
     .order("created_at", { ascending: false })
     .limit(200);
 
   // Group reading history by series.
-  const hist = new Map<string, { id: string; title: string; chaptersRead: number; lastReadAt: string }>();
+  const hist = new Map<string, { id: string; slug: string | null; title: string; genre: string | null; cover_image: string | null; chaptersRead: number; lastReadAt: string }>();
   for (const s of sessions ?? []) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ser = (s as any).chapters?.series;
     if (!ser?.id) continue;
-    const cur = hist.get(ser.id) ?? { id: ser.id, title: ser.title, chaptersRead: 0, lastReadAt: (s as { created_at: string }).created_at };
+    const cur = hist.get(ser.id) ?? { id: ser.id, slug: ser.slug ?? null, title: ser.title, genre: ser.genre ?? null, cover_image: ser.cover_image ?? null, chaptersRead: 0, lastReadAt: (s as { created_at: string }).created_at };
     cur.chaptersRead += 1;
     hist.set(ser.id, cur);
   }
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     follows: (follows ?? []).map((f) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ser = (f as any).series;
-      return { id: ser?.id, title: ser?.title, genre: ser?.genre, status: ser?.status, mode: (f as { mode: string }).mode };
+      return { id: ser?.id, slug: ser?.slug ?? null, title: ser?.title, genre: ser?.genre, status: ser?.status, cover_image: ser?.cover_image ?? null, mode: (f as { mode: string }).mode };
     }).filter((f) => f.id),
     history: [...hist.values()],
   });

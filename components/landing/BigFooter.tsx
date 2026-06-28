@@ -5,8 +5,8 @@ const COLS = [
   {
     head: "Read",
     links: [
-      { label: "Browse", href: "/read" },
-      { label: "Your wallet", href: "/dashboard" },
+      { label: "Discover", href: "/read" },
+      { label: "Dashboard", href: "/dashboard" },
       { label: "Live stats", href: "/stats" },
     ],
   },
@@ -14,8 +14,8 @@ const COLS = [
     head: "Create",
     links: [
       { label: "Publish", href: "/creator" },
-      { label: "Earnings", href: "/creator/dashboard" },
-      { label: "Join", href: "/creator/join" },
+      { label: "Become a creator", href: "/creator/onboarding" },
+      { label: "Sign in", href: "/join" },
     ],
   },
   {
@@ -62,9 +62,14 @@ export function BigFooter() {
         </div>
       </div>
 
-      <div className="mx-auto flex max-w-[88rem] flex-wrap items-center justify-between gap-3 px-6 py-6 lg:px-10">
+      <div className="mx-auto flex max-w-[88rem] flex-col gap-3 border-t border-[var(--color-border)] px-6 py-6 lg:px-10">
         <span className="text-utility text-[var(--color-muted)]">© 2026 Charon</span>
-        <span className="text-utility text-[var(--color-muted)]">Coin emblem by Brickclay · Noun Project</span>
+        <p className="max-w-4xl text-xs leading-relaxed text-[var(--color-muted)]/70">
+          Attributions — all from the Noun Project: coin emblem by Brickclay; “Pay per read” by Marcello Marino;
+          “Living prices” by Amethyst Studio; “Loyalty” by Björn Andersson; “Creators keep it” by WEBTECHOPS LLP;
+          “Early access” &amp; “No interruptions” by IMG visuals icons. Novel covers and text are the property of their
+          respective authors.
+        </p>
       </div>
     </footer>
   );

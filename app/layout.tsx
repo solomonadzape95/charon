@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Cinzel, EB_Garamond, DM_Mono } from "next/font/google";
 import { TopBar } from "@/components/TopBar";
+import { AppFooter } from "@/components/AppFooter";
+import { SessionBridge } from "@/components/SessionBridge";
+import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const cinzel = Cinzel({ subsets: ["latin"], weight: ["400", "600", "700", "800"], variable: "--font-cinzel" });
@@ -15,10 +18,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${cinzel.variable} ${garamond.variable} ${dmMono.variable}`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${cinzel.variable} ${garamond.variable} ${dmMono.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body>
+        <SessionBridge />
         <TopBar />
         <main className="min-h-[calc(100vh-4.5rem)]">{children}</main>
+        <AppFooter />
       </body>
     </html>
   );

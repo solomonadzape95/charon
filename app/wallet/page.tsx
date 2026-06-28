@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SubNav } from "@/components/SubNav";
+import { AccountNav } from "@/components/AccountNav";
 
 interface WalletData {
   balance: number;
@@ -53,8 +53,8 @@ export default function WalletPage() {
 
   return (
     <>
-      <SubNav role="reader" />
-      <div className="mx-auto max-w-4xl space-y-8 px-6 py-10">
+      <AccountNav />
+      <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
         <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
           <p className="text-utility text-[var(--color-muted)]">Balance</p>
           <p className="font-display text-5xl font-bold text-coin">${(w?.balance ?? 0).toFixed(2)}</p>

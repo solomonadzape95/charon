@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SubNav } from "@/components/SubNav";
+import { AccountNav } from "@/components/AccountNav";
+import { getCreatorId, resolveCreatorId } from "@/lib/account";
 
 interface Analytics {
   totalEarned: number;
@@ -33,17 +34,19 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<Analytics | null>(null);
 
   useEffect(() => {
-    const id = localStorage.getItem("charon_creator_id");
-    if (!id) {
-      router.replace("/creator/join");
-      return;
-    }
-    fetch(`/api/creator/analytics?creatorId=${id}`).then((r) => r.json()).then(setData).catch(() => {});
+    (async () => {
+      const id = getCreatorId() ?? (await resolveCreatorId());
+      if (!id) {
+        router.replace("/dashboard");
+        return;
+      }
+      fetch(`/api/creator/analytics?creatorId=${id}`).then((r) => r.json()).then(setData).catch(() => {});
+    })();
   }, [router]);
 
   return (
     <>
-      <SubNav role="creator" />
+      <AccountNav />
       <div className="mx-auto max-w-5xl space-y-10 px-6 py-10">
         <div>
           <h1 className="font-display text-3xl font-semibold">Analytics</h1>

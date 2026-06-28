@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
   const existing = await getUserByEmail(email);
   const user = existing ?? (await createUser(email));
-  return NextResponse.json({ user });
+  return NextResponse.json({ user, created: !existing });
 }
 
 export async function GET(req: NextRequest) {

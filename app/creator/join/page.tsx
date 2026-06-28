@@ -1,5 +1,6 @@
-import { AuthScreen } from "@/components/AuthForm";
+import { redirect } from "next/navigation";
 
-export default function CreatorJoinPage() {
-  return <AuthScreen role="creator" />;
+// Auth is unified — creators sign in with the same account as readers.
+export default function CreatorJoinRedirect() {
+  redirect("/join");
 }

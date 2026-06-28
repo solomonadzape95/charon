@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { SubNav } from "@/components/SubNav";
+import { PenLine } from "lucide-react";
+import { AccountNav } from "@/components/AccountNav";
+import { CreatorOverview } from "@/components/CreatorOverview";
+import { resolveCreatorId, getCreatorId } from "@/lib/account";
 
 interface User {
   id: string;
@@ -38,6 +41,7 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const [budget, setBudget] = useState<Budget | null>(null);
   const [busy, setBusy] = useState(false);
+  const [creatorId, setCreatorId] = useState<string | null>(null);
 
   const load = useCallback(
     async (id: string) => {
@@ -70,8 +74,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     const id = localStorage.getItem(LS_KEY);
-    if (id) load(id);
-    else router.replace("/join");
+    if (id) {
+      load(id);
+      setCreatorId(getCreatorId());
+      resolveCreatorId().then(setCreatorId);
+    } else router.replace("/join");
   }, [load, router]);
 
   async function deposit(amount: number) {
@@ -90,11 +97,32 @@ export default function Dashboard() {
     }
   }
 
-  if (!user) return null;
+  if (!user)
+    return (
+      <>
+        <AccountNav />
+        <div className="mx-auto max-w-5xl space-y-4 px-6 py-10">
+          <div className="h-28 animate-pulse bg-[var(--color-surface)]" />
+          <div className="h-20 animate-pulse bg-[var(--color-surface)]" />
+          <div className="h-40 animate-pulse bg-[var(--color-surface)]" />
+        </div>
+      </>
+    );
+
+  const settled = sessions.filter((s) => s.amount != null);
+  const chaptersPaid = settled.length;
+  const seriesRead = new Set(sessions.map((s) => s.series).filter(Boolean)).size;
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const settledThisMonth = settled
+    .filter((s) => new Date(s.created_at) >= monthStart)
+    .reduce((sum, s) => sum + Number(s.amount), 0);
+  const streak = readingStreak(sessions.map((s) => s.created_at));
 
   return (
     <>
-      <SubNav role="reader" />
+      <AccountNav />
       <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
       <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
         <div className="flex items-end justify-between">
@@ -118,6 +146,13 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-px border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
+        <DashStat label="Chapters read" value={`${chaptersPaid}`} />
+        <DashStat label="Series read" value={`${seriesRead}`} />
+        <DashStat label="Settled this month" value={`$${settledThisMonth.toFixed(2)}`} accent />
+        <DashStat label="Day streak" value={`${streak}`} />
       </section>
 
       {budget && (budget.lowBalance || budget.modeSwitches.length > 0) && (
@@ -187,7 +222,49 @@ export default function Dashboard() {
           </ul>
         )}
       </section>
+
+      {creatorId ? (
+        <CreatorOverview creatorId={creatorId} />
+      ) : (
+        <section className="flex flex-col items-start gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+          <div className="flex items-center gap-2 text-[var(--color-gold)]">
+            <PenLine size={18} strokeWidth={1.6} />
+            <h2 className="font-display text-xl font-semibold text-[var(--color-ink)]">Write on Charon</h2>
+          </div>
+          <p className="max-w-xl text-sm text-[var(--color-muted)]">
+            Publish your series and get paid per chapter, per reader — in real time. Keep 95%, withdraw anytime. Your
+            reading account stays exactly as it is.
+          </p>
+          <Link href="/creator/onboarding" className="btn-coin">
+            Become a creator
+          </Link>
+        </section>
+      )}
       </div>
     </>
   );
+}
+
+function DashStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="bg-[var(--color-surface)] px-5 py-5">
+      <p className="text-utility text-[var(--color-muted)]">{label}</p>
+      <p className={`tabular mt-1 text-2xl font-semibold ${accent ? "text-[var(--color-gold)]" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
+/** Consecutive days (ending today or yesterday) with at least one session. */
+function readingStreak(dates: string[]): number {
+  if (!dates.length) return 0;
+  const days = new Set(dates.map((d) => new Date(d).toDateString()));
+  let streak = 0;
+  const cursor = new Date();
+  // Allow the streak to count from today or yesterday.
+  if (!days.has(cursor.toDateString())) cursor.setDate(cursor.getDate() - 1);
+  while (days.has(cursor.toDateString())) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
 }

@@ -1,199 +1,176 @@
-Reader Experience
-1. Home
+Onboarding flow (3 screens, not a page)
+After email signup, three screens before they hit the main app:
+Screen 1 — "How Charon works." Three sentences max. You read. We track engagement. We pay the creator automatically after your session. One illustration showing the flow.
+Screen 2 — Deposit. Card input via Circle's embedded onramp widget. Suggested amounts: $3 / $5 / $10 with a custom field. Show what each gets them in approximate chapters: "$5 ≈ 100-250 chapters depending on what you read." First-time users also see the $0.50 free credit applied automatically here — "We're adding $0.50 to your balance to get you started."
+Screen 3 — Pick your first series. Show 6-8 featured series, genre-filtered by what they indicated on signup. Tap one, go directly to the series page. No extra steps.
 
-Purpose:
+Home / Discovery page
+The reader's main feed after login. Not a social feed — a reading-focused dashboard.
+Top section — Continue reading. Cards for every series they've started, showing their current chapter and the number of unread chapters since they last visited. If they're a pre-release subscriber to a series and a new chapter just dropped, that card is highlighted with "New chapter available."
+Middle section — Trending this week. Series where reader engagement is highest — not just views, but session depth and completion rates. Agent 3's momentum scores determine this ranking, not manual curation. This is important: the ranking reflects genuine reader engagement, not paid placement.
+Bottom section — Recommended for you. Agent 4 powers this — based on genres they've read, binge patterns, and completion rates, it surfaces series they're likely to love. This is a stretch goal for the hackathon but include the UI placeholder even if the logic is simple at first.
+What the agent touches: Agent 3 sets the trending rankings. Agent 4 powers recommendations. Neither blocks page load — both are pre-computed on a schedule and cached.
 
-Discover new stories
-Continue reading
-Personalized recommendations
+Series page
+The page for a specific series. This is where a reader decides whether to start reading.
+What's on it:
 
-Sections:
+Cover image, title, author, genre tags
+Series description
+Stats: total chapters, total readers, average session value (shows creators what the community thinks it's worth), update frequency ("new chapter every 3-4 days")
+Payment mode selector — three options shown clearly:
 
-Continue Reading
-Trending
-New Releases
-Recommended for You
-Genres
-AI Picks
-"Recently Rewarded Stories"
-Reading Streak
-2. Library
+Read as you go (pay per session, agent-valued)
+Series Pass (one price, permanent access including future chapters — shown with Agent 2's suggested price)
+Pre-release (auto-pay when new chapters drop, shown with per-chapter price)
 
-Contains:
 
-Saved Books
-Reading History
-Downloads
-Favorites
-Collections
-3. Discover
+Chapter list — each chapter shows current price (Agent 3), word count, estimated read time, and a small engagement indicator (completion rate visualized as a simple bar — high completion chapters are visually distinct)
+Reader comments section — kept minimal, no threading, just reactions to chapters
+"Start reading" button — goes directly to chapter 1
 
-Think Spotify Explore.
+What the agent touches: Agent 3's current price on every chapter. Agent 2's Series Pass suggested price. Completion rate data fed by Agent 1's historical session data across all readers.
 
-Features:
+Chapter reader page
+The most important page on the entire platform. This is where value is created and where the UX has to be perfect.
+What's on it:
 
-Search
-Genres
-Tags
-Mood
-Length
-New Authors
-AI Recommendations
-Editor's Picks
-4. Reading Page
+The content. Nothing else while reading.
+Minimal chrome: series title, chapter number, a thin progress bar at the top, a settings icon (font size, background color — white/sepia/dark)
+For manga/manhwa: vertical scroll by default, tap-to-zoom on panels
+For webnovel: clean typography, comfortable line height, no distractions
+No payment UI. No price display. No balance reminder. Nothing that reminds the reader money is involved while they're reading.
+At the very bottom after the last line: chapter navigation (previous / next), a simple reaction strip (five emoji reactions — quick, no account friction), and a comment field (optional, one line)
 
-The heart of the app.
+What the agent touches: Agent 1 starts a silent session timer the moment the page loads. It tracks scroll events, direction changes (scroll-backs), time between scroll events (reading pace vs skimming), and completion. None of this is visible to the reader. None of it creates any UI. It is purely background instrumentation.
 
-Contains:
+Session summary (overlay / screen after navigating away)
+This is the most novel UI element on the platform. It appears either as a bottom sheet when the reader navigates to the next chapter, or as a full screen when they close the app or browser tab.
+What's on it:
 
-Title
-Author
-Progress
-Font controls
-Theme
-Reading timer
-AI Summary
-Highlight
-Notes
-Bookmark
+What you read this session: series name, chapters covered, total read time
+Session value: the USDC amount Agent 1 settled, shown large and clean — "$0.23"
+Agent reasoning: one sentence explaining why. "You re-read chapter 7 twice and binged 5 chapters without pausing. High engagement session." This is the moment that makes the platform feel intelligent rather than mechanical.
+Balance remaining: shown small, below the main number
+Creator acknowledgment: "Settled to [Creator Name]" with their avatar. Humanizes the transaction.
+Two buttons: "Keep reading" and "Done"
 
-At the bottom:
+If the reader's balance is getting low (Agent 4 has flagged this), a soft nudge appears below the balance: "You have about 12 chapters left at your reading pace. Top up?" — with a one-tap deposit button.
+What the agent touches: This entire screen is Agent 1's output. The value, the reasoning, the engagement signals — all from the session analysis. Agent 4 determines whether the low-balance nudge appears.
 
-❤️ Reward this chapter
+Reader dashboard
+The reader's personal account page. Not prominent — they shouldn't need to visit it often — but complete.
+What's on it:
 
-Suggested buttons:
+Current balance with top-up button
+Reading stats: total chapters read, total creators supported, total USDC settled this month, reading streak (days in a row)
+Series following list with mode shown per series (pay-as-you-go / pre-release / series pass)
+Full tip history: every session, date, series, chapters read, amount settled, agent reasoning
+Spending breakdown: by creator, by genre, by week — simple chart
+Payment mode management: toggle any series between modes, cancel pre-release subscriptions
+Account settings: email, notification preferences, connected wallet (optional)
 
-5¢
-10¢
-25¢
-Custom
-5. Rewards
+What the agent touches: Agent 4 has a dedicated card here showing "Your reading pace this week" and any suggestions — mode switches, top-up recommendations. It's informational, not intrusive.
 
-Shows:
+Creator Side
+Creator landing page (unauthenticated)
+Separate from the reader landing page. Creators who find Charon through community posts or direct outreach land here.
+What's on it:
 
-Tips sent
-Favorite creators
-Monthly support
-Creator milestones
+The creator pitch — one paragraph, no jargon: "Upload your series. Readers pay per chapter based on how deeply they engage. You earn in real time. Withdraw to your bank or wallet with no minimum threshold."
+The fee table — explicit, visible, no hiding: "We take 5%. You keep 95%. No other fees."
+The global payout proof point — "Instant USDC settlement to any wallet worldwide. No minimums. No conversion delays." This line exists specifically for creators in Nigeria, Indonesia, Philippines, Brazil — every market where Patreon and WebNovel have failed them.
+A live earnings ticker if possible — showing real creator earnings on the platform in real time
+Comparison table: Charon vs Patreon vs WebNovel vs Royal Road+Patreon on three axes: revenue share, payout speed, reading experience
+Signup CTA
 
-Makes readers feel like patrons.
 
-6. Inbox
+Creator onboarding (4 screens)
+Screen 1 — Basic profile. Name, bio, profile image, genre tags.
+Screen 2 — Payout setup. Two options clearly presented:
 
-Notifications:
+USDC wallet address (paste it in, done, instant withdrawals)
+Bank account (country, account details, Circle handles the offramp — shown with the 1.5% conversion fee disclosed upfront)
 
-Creator replied
-New chapter
-Creator claimed your reward
-Reading achievements
-7. Wallet
+This screen is mandatory before upload. Creators need to be able to receive payment before their content goes live.
 
-Shows:
+Screen 3 — Upload your first series. Title, description, genre, cover image. Then chapter upload — text paste or file upload (.txt, .docx, .epub for novels; image upload for manga). Agent 2 runs automatically after upload and shows the suggested price in a confirmation step: "Agent suggests $0.04 per chapter based on word count and genre benchmarks. Accept or set your own price."
+Screen 4 — Series Pass setup (optional). Creator can set a Series Pass price or let Agent 2 suggest one. Can be skipped and configured later.
 
-Balance
-Deposit
-Transactions
-Rewards sent
-Rewards received (if creator)
-8. Profile
+Creator dashboard (home)
+The main page a creator sees every time they log in. Should feel motivating — they should see money moving.
+What's on it:
 
-Contains:
+Earnings overview — big, prominent. Total earned today, this week, this month. A simple line chart showing earnings over time. This is the first thing they see.
+Live activity feed — real-time: "A reader just finished chapter 12 of your series. $0.04 settled." Not overwhelming — capped at showing the last 5 events, auto-updating. This is the emotional core of the creator experience. Seeing money arrive in real time, connected to a specific reader finishing a specific chapter, is the thing that makes creators evangelical about the platform.
+Series cards — each series showing: active readers this week, total chapters, earnings this month, average completion rate, and a quick "upload chapter" button
+Withdrawal button — always visible, shows available balance. If the 7-day escrow model is active, shows two numbers: "Available now: $3.20 / Pending release: $1.45 (releases in 3 days)"
+Creator Health Score (post-hackathon) — shown as a simple gauge. Tells the creator where they stand and what's driving their score.
 
-Avatar
-Reading stats
-Favorite genres
-Badges
-Reading streak
-Settings
-Creator Experience
+What the agent touches: Agent 2's pricing recommendations surface here when new chapters have been uploaded. Agent 3's repricing decisions are logged here — creators can see when a chapter's price went up or down and why.
 
-Different home.
+Series management page
+One page per series, accessed from the dashboard.
+What's on it:
 
-1. Creator Dashboard
+Series details editor — cover, description, genre tags, status (ongoing / completed / hiatus)
+Chapter list — every chapter with:
 
-Shows:
+Current price (Agent 3's current valuation, with a small indicator if it's moved up or down recently)
+Read count
+Completion rate (shown as a percentage bar — instantly shows which chapters readers finish and which they abandon)
+Re-read rate
+Earnings from this chapter
+Edit / delete options
 
-Revenue today
-Readers
-Tips
-New followers
-Active stories
 
-Charts:
+Chapter upload button — opens a simple upload flow inline
+Pricing controls — override Agent 2/3 prices per chapter, or set a global price floor for the series
+Series Pass management — current price, how many readers have bought it, total earned from passes
+Pre-release management — set early-access price per chapter, see how many pre-release subscribers you have
+Reader retention chart — a simple chart showing what percentage of readers who started the series are still reading at each chapter. The drop-off points are visible. This is genuinely useful data creators have never had before.
 
-Earnings
-Reads
-Completion
-Tips over time
-2. Stories
+What the agent touches: Agent 3's price column is live — it updates as the repricing agent runs. Completion rate and re-read rate data come from Agent 1's accumulated session records across all readers.
 
-Manage:
+Analytics page
+Deeper data for creators who want it. Kept simple — not a data science dashboard, just the numbers that actually help a creator make decisions.
+What's on it:
 
-Drafts
-Published
-Scheduled
-Archived
-3. Editor
+Earnings breakdown — by chapter, by time period, by payment mode (how much came from pay-as-you-go vs pre-release vs series pass)
+Reader breakdown — total unique readers, new vs returning this week, geographic distribution (anonymized — shows country, not identity)
+Engagement heatmap — across all chapters, shows completion rate and re-read rate as a visual heat map. Cold chapters are instantly visible. This tells creators which chapters are weak before readers tell them in comments.
+Binge depth chart — average number of chapters read per session. If this is going up, the series has momentum. If it's dropping, readers are losing interest.
+Top earning chapters — the 5 chapters that have generated the most revenue. Usually correlates with highest completion and re-read rates.
+Payout history — every withdrawal, date, amount, destination, status
 
-Rich editor.
+What the agent touches: All of this data is derived from Agent 1's session records. The heatmap is the most powerful thing on this page — it visualizes thousands of individual agent valuations into a single actionable picture.
 
-Features:
+Upload / chapter editor page
+Clean and simple. Not a full editor — creators write elsewhere and paste in or upload.
+What's on it:
 
-Markdown
-AI proofreading
-AI title suggestions
-AI cover generation
-Publish
-4. Analytics
+Chapter title field
+Chapter number (auto-suggested based on previous chapter)
+Content area — rich text paste for novels, image uploader for manga (drag and drop, reorder panels)
+Release settings:
 
-Metrics:
+Publish now (available to all readers immediately)
+Schedule public release (set date/time)
+Pre-release only (available to pre-release subscribers now, public at set date)
 
-Reads
-Chapter drop-off
-Reading time
-Tip conversion
-Popular chapters
-Reader retention
-5. Rewards
 
-Shows:
+After upload, Agent 2 runs and returns a pricing suggestion within 2-3 seconds: "Suggested price: $0.05 based on 2,847 words, fantasy genre, and your series' current engagement rate." Accept or override.
+Publish button
 
-Tip history
-Escrow balance
-Withdraw
-Claim rewards
-6. Audience
 
-Contains:
+Withdrawal page
+Simple. No friction.
+What's on it:
 
-Followers
-Top supporters
-Comments
-Messages
-7. AI Assistant
-
-Creator asks:
-
-Which chapter loses readers?
-
-Which chapter receives the most tips?
-
-Suggest a better title.
-
-8. Profile
-
-Contains:
-
-Bio
-Wallet
-Socials
-Published works
-Shared Pages
-
-Both users get:
-
-Settings
-Notifications
-Search
-Wallet
-Help
+Available balance (cleared escrow)
+Pending balance (in escrow, with release dates)
+Withdraw to: toggle between saved USDC wallet and bank account
+Amount field — defaults to full available balance, creator can enter any amount
+Fee disclosure — USDC withdrawal: no fee. Bank withdrawal: 1.5% conversion fee shown as a specific dollar amount before they confirm: "You'll receive $X.XX after conversion fee."
+Confirm button
+Withdrawal history below

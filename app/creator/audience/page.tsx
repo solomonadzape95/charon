@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SubNav } from "@/components/SubNav";
+import { AccountNav } from "@/components/AccountNav";
+import { getCreatorId, resolveCreatorId } from "@/lib/account";
 
 interface Audience {
   followerCount: number;
@@ -14,18 +15,20 @@ export default function AudiencePage() {
   const [data, setData] = useState<Audience | null>(null);
 
   useEffect(() => {
-    const id = localStorage.getItem("charon_creator_id");
-    if (!id) {
-      router.replace("/creator/join");
-      return;
-    }
-    fetch(`/api/creator/audience?creatorId=${id}`).then((r) => r.json()).then(setData).catch(() => {});
+    (async () => {
+      const id = getCreatorId() ?? (await resolveCreatorId());
+      if (!id) {
+        router.replace("/dashboard");
+        return;
+      }
+      fetch(`/api/creator/audience?creatorId=${id}`).then((r) => r.json()).then(setData).catch(() => {});
+    })();
   }, [router]);
 
   return (
     <>
-      <SubNav role="creator" />
-      <div className="mx-auto max-w-4xl space-y-10 px-6 py-10">
+      <AccountNav />
+      <div className="mx-auto max-w-5xl space-y-10 px-6 py-10">
         <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
           <p className="text-utility text-[var(--color-muted)]">Followers</p>
           <p className="font-display text-5xl font-bold text-coin">{data?.followerCount ?? 0}</p>

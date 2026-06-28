@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Coins, TrendingUp, Heart, Wallet, Unlock, BookOpen } from "lucide-react";
+import { SafeImage } from "@/components/SafeImage";
 import { HeroCollage } from "@/components/landing/HeroCollage";
 import { StatsBand } from "@/components/landing/StatsBand";
 import { AgentsBento } from "@/components/landing/AgentsBento";
@@ -18,37 +18,37 @@ const MARQUEE = [
 
 const DIFF = [
   {
-    icon: Coins,
+    icon: "/per-read.svg",
     title: "Pay per read",
     body: "No subscription. You pay for the chapters you actually read, scaled to how deeply you engaged.",
     old: "Subscriptions charge the skimmer and the superfan the same.",
   },
   {
-    icon: TrendingUp,
+    icon: "/prices.svg",
     title: "Living prices",
     body: "Every chapter re-prices from real demand and reader behaviour — gently, capped at 20% a day.",
     old: "Fixed prices ignore what readers love or skip.",
   },
   {
-    icon: Heart,
+    icon: "/loyalty.svg",
     title: "Loyalty pays off",
     body: "Follow from chapter one and pay less. New readers and bingers get discounts too.",
     old: "Patreon tiers are flat and forget how long you've stayed.",
   },
   {
-    icon: Wallet,
+    icon: "/creators.svg",
     title: "Creators keep it",
     body: "Earnings hit the creator's wallet per chapter, in real time. A small settlement fee, nothing else.",
     old: "Royal Road sends readers to Patreon. Webtoon and WebNovel take the rest.",
   },
   {
-    icon: Unlock,
+    icon: "/access.svg",
     title: "Early access, automated",
     body: "Opt in and new chapters auto-unlock the moment they drop. Or buy a finished series in one tap.",
     old: "Patreon early access is manual, monthly, and takes a cut.",
   },
   {
-    icon: BookOpen,
+    icon: "/uninterrupted.svg",
     title: "No interruptions",
     body: "Never stopped mid-chapter to buy coins. Read now; value flows after.",
     old: "Coin-gated apps break the story to sell you tokens.",
@@ -88,16 +88,29 @@ export default function Home() {
               Every platform makes you choose a flat fee or ads. We fixed the unit.
             </h2>
           </div>
-          <div className="md:col-span-8">
+          <div className="md:col-span-8 gap-2">
             {DIFF.map((d) => (
               <div
                 key={d.title}
-                className="flex gap-5 border-t border-[var(--color-border)] py-8 first:border-t-0 first:pt-0"
+                className="flex gap-5 border-t border-[var(--color-border)] first:border-t-0 first:pt-0"
               >
-                <div className="mt-1 grid h-12 w-12 shrink-0 place-items-center border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-gold)]">
-                  <d.icon size={22} strokeWidth={1.5} />
+                <div className="mt-1 grid w-40 shrink-0 place-items-center border border-[var(--color-border)] bg-[var(--color-surface)]">
+                  <span
+                    aria-hidden
+                    className="block h-28 w-28 bg-[var(--color-gold)]"
+                    style={{
+                      WebkitMaskImage: `url(${d.icon})`,
+                      maskImage: `url(${d.icon})`,
+                      WebkitMaskRepeat: "no-repeat",
+                      maskRepeat: "no-repeat",
+                      WebkitMaskPosition: "center",
+                      maskPosition: "center",
+                      WebkitMaskSize: "contain",
+                      maskSize: "contain",
+                    }}
+                  />
                 </div>
-                <div>
+                <div className="py-8">
                   <h3 className="font-display text-2xl font-semibold md:text-3xl">{d.title}</h3>
                   <p className="mt-2 max-w-xl text-[var(--color-muted)]">{d.body}</p>
                   <p className="mt-3 text-sm text-[var(--color-muted)]/70">— {d.old}</p>
@@ -135,12 +148,12 @@ export default function Home() {
       {/* Favourite authors */}
       <AuthorsBand />
 
-      {/* Closing */}
-      <section className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
-        <div className="mx-auto flex max-w-[88rem] flex-col items-center gap-6 px-6 py-24 text-center lg:px-10">
-          <h2 className="font-display display-md max-w-2xl font-semibold">
-            Every chapter, paid the moment it&apos;s read.
-          </h2>
+      {/* Closing — CTA image as a grayed-out background */}
+      <section className="relative flex min-h-[60vh] items-center overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+        <SafeImage src="/cta.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25 grayscale" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[color-mix(in_srgb,var(--color-bg)_82%,transparent)] to-[color-mix(in_srgb,var(--color-bg)_68%,transparent)]" />
+        <div className="relative z-10 mx-auto flex w-full max-w-[88rem] flex-col items-center gap-6 px-6 py-24 text-center lg:px-10">
+          <h2 className="font-display display-md max-w-2xl font-semibold">Every chapter, paid the moment it&apos;s read.</h2>
           <div className="flex flex-wrap justify-center gap-3">
             <Link href="/read" className="btn-coin">
               Start reading

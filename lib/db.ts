@@ -161,6 +161,11 @@ export async function getSeriesById(id: string): Promise<Series | null> {
   return (data as Series) ?? null;
 }
 
+export async function getSeriesBySlug(slug: string): Promise<Series | null> {
+  const { data } = await supabaseService().from("series").select("*").eq("slug", slug).maybeSingle();
+  return (data as Series) ?? null;
+}
+
 export async function listSeries(limit = 50): Promise<Series[]> {
   const { data } = await supabaseService()
     .from("series")

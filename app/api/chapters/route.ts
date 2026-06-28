@@ -11,6 +11,7 @@ import {
 } from "@/lib/db";
 import { priceChapter } from "@/lib/agents/pricing";
 import { settleSession } from "@/lib/payments";
+import { supabaseService } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -29,6 +30,21 @@ export async function GET(req: NextRequest) {
   if (!seriesId) return NextResponse.json({ error: "seriesId required" }, { status: 400 });
   const chapters = await listChapters(seriesId);
   return NextResponse.json({ chapters });
+}
+
+/**
+ * Delete a chapter that has no reader history yet.
+ *   DELETE /api/chapters?id=<uuid>
+ */
+export async function DELETE(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  const { error } = await supabaseService().from("chapters").delete().eq("id", id);
+  if (error) {
+    // Foreign-key guard — chapters with sessions/payments can't be hard-deleted.
+    return NextResponse.json({ error: "This chapter has reader history and can't be deleted." }, { status: 400 });
+  }
+  return NextResponse.json({ ok: true });
 }
 
 export async function POST(req: NextRequest) {
