@@ -55,7 +55,7 @@ export default function AdminCreators() {
   }
 
   function copyClaim(token: string) {
-    const link = `${window.location.origin}/creator/onboarding?claim=${token}`;
+    const link = `${window.location.origin}/creator/claim?token=${token}`;
     navigator.clipboard?.writeText(link);
     setCopied(token);
     setTimeout(() => setCopied(null), 1500);

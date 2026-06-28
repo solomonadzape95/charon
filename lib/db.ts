@@ -157,6 +157,47 @@ export async function markCreatorClaimed(creatorId: string): Promise<void> {
   await supabaseService().from("creators").update({ claimed: true, balance_usd: 0 }).eq("id", creatorId);
 }
 
+export interface ClaimResult {
+  ok: boolean;
+  creator?: Creator;
+  reason?: string;
+  alreadyYours?: boolean;
+}
+
+/**
+ * Bind a seeded (account-less) creator record to a real signed-in email via its
+ * claim token. Once bound, the existing email-match flow grants the person their
+ * dashboard, earnings, escrow and withdrawal access.
+ */
+export async function claimCreatorByToken(token: string, email: string): Promise<ClaimResult> {
+  const e = email.trim().toLowerCase();
+  const creator = await getCreatorByClaimToken(token);
+  if (!creator) return { ok: false, reason: "invalid claim link" };
+
+  // Already claimed: fine if it's the same person, otherwise blocked.
+  if (creator.claimed && creator.email && creator.email.toLowerCase() !== e) {
+    return { ok: false, reason: "this profile has already been claimed" };
+  }
+  if (creator.email && creator.email.toLowerCase() === e) {
+    return { ok: true, creator, alreadyYours: true };
+  }
+
+  // The email must not already belong to a different creator.
+  const conflict = await getCreatorByEmail(e);
+  if (conflict && conflict.id !== creator.id) {
+    return { ok: false, reason: "that email is already linked to another creator profile" };
+  }
+
+  const { data, error } = await supabaseService()
+    .from("creators")
+    .update({ email: e, claimed: true })
+    .eq("id", creator.id)
+    .select()
+    .single();
+  if (error) return { ok: false, reason: error.message };
+  return { ok: true, creator: data as Creator };
+}
+
 // ── series ─────────────────────────────────────────────────
 export async function createSeries(input: {
   creatorId: string;
