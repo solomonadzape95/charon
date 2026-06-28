@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Wallet, Send, Beaker, Copy, Check, Loader2 } from "lucide-react";
-import { createWalletClient, custom, erc20Abi } from "viem";
+import { createWalletClient, custom, parseEther } from "viem";
 
 interface DepositInfo {
   treasuryAddress: string | null;
@@ -96,7 +96,8 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
               {
                 chainId: info.chainIdHex,
                 chainName: info.network,
-                nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                // Arc's native gas token is USDC (18 decimals).
+                nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
                 rpcUrls: [info.rpcUrl],
                 blockExplorerUrls: [info.explorer],
               },
@@ -110,17 +111,18 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
       const chain = {
         id: info.chainId,
         name: info.network,
-        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+        nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
         rpcUrls: { default: { http: [info.rpcUrl] } },
       } as const;
       const walletClient = createWalletClient({ account, chain, transport: custom(eth) });
 
-      const micros = BigInt(Math.round(amt * 1_000_000));
-      const hash = await walletClient.writeContract({
-        address: info.usdcAddress as `0x${string}`,
-        abi: erc20Abi,
-        functionName: "transfer",
-        args: [info.treasuryAddress as `0x${string}`, micros],
+      // Native USDC transfer (18 decimals) — this is the gas token and what the
+      // faucet funds, so no separate token approval/balance is needed.
+      const hash = await walletClient.sendTransaction({
+        account,
+        chain,
+        to: info.treasuryAddress as `0x${string}`,
+        value: parseEther(String(amt)),
       });
       await verify(hash, "wallet");
     } catch (e) {
@@ -170,6 +172,12 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
               Connects your wallet on {info?.network ?? "Arc"} and sends ${amt.toFixed(2)} USDC to the treasury — you just
               confirm. We verify the transfer on-chain before crediting.
             </p>
+            <p className="text-xs text-[var(--color-muted)]">
+              On Arc, USDC is also the gas token. Need test funds?{" "}
+              <a href="https://faucet.circle.com" target="_blank" rel="noreferrer" className="underline">
+                Get testnet USDC →
+              </a>
+            </p>
             <button onClick={payWithWallet} disabled={busy || amt <= 0} className="btn-coin w-full disabled:opacity-50">
               {busy ? <Spinner /> : `Connect & deposit $${amt.toFixed(2)}`}
             </button>
@@ -180,7 +188,7 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
           <>
             {info?.treasuryAddress ? (
               <div className="space-y-1 border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
-                <p className="text-utility text-[var(--color-muted)]">Send USDC ({info.network}) to</p>
+                <p className="text-utility text-[var(--color-muted)]">Send native USDC on {info.network} to</p>
                 <button
                   onClick={() => {
                     navigator.clipboard?.writeText(info.treasuryAddress!);
