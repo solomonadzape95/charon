@@ -8,14 +8,14 @@ export function HeroCollage() {
     <section className="relative flex h-[calc(100svh-4.5rem)] flex-col overflow-hidden border-b border-[var(--color-border)]">
       {/* Top — description + first headline word */}
       <div className="mx-auto w-full max-w-[88rem] shrink-0 px-6 py-5 lg:px-10 lg:py-7">
-        <div className="grid grid-cols-12 items-end gap-6">
-          <div className="fade-up col-span-12 md:col-span-5">
+        <div className="grid grid-cols-14 items-end gap-6">
+          <div className="fade-up col-span-14 md:col-span-3">
             <p className="max-w-md text-lg leading-relaxed text-[var(--color-muted)]">
               A reading platform with <span className="text-[var(--color-ink)]">no subscription and no paywalls</span>.
               Deposit once; after each session an agent pays the creator what your reading was actually worth.
             </p>
           </div>
-          <div className="col-span-12 md:col-span-7">
+          <div className="col-span-14 md:col-span-11">
             <h1 className="font-display display-xl fade-up text-right font-bold tracking-tight">READ FREELY</h1>
           </div>
         </div>
@@ -39,7 +39,7 @@ export function HeroCollage() {
       {/* Bottom — CTAs + accent headline word */}
       <div className="mx-auto w-full max-w-[88rem] shrink-0 px-6 py-5 lg:px-10 lg:py-7">
         <div className="grid grid-cols-12 items-start gap-6">
-          <div className="fade-up col-span-12 flex flex-wrap gap-3 md:col-span-5">
+          <div className="fade-up col-span-12 flex flex-wrap gap-3 md:col-span-4">
             <Link href="/read" className="btn-coin">
               Start reading
             </Link>
@@ -47,7 +47,7 @@ export function HeroCollage() {
               I&apos;m a creator
             </Link>
           </div>
-          <div className="col-span-12 md:col-span-7">
+          <div className="col-span-12 md:col-span-8">
             <h2 className="font-display display-xl fade-up text-right font-bold tracking-tight text-coin">PAY FAIRLY</h2>
           </div>
         </div>
