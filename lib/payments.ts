@@ -1,14 +1,17 @@
 /**
- * Payment orchestration for the reading platform.
+ * Payment orchestration for the reading platform (escrow-batched model).
  *
  *  - Reader balances: a Supabase ledger backed by the pooled Arc treasury
  *    (TREASURY_WALLET_PK). Deposits credit the ledger; sessions/unlocks debit it.
- *  - Settlement: the treasury settles USDC → a creator address on Arc via the
- *    x402 /api/settle endpoint. If the creator has no payout wallet yet, the
- *    amount is held as escrow (creators.balance_usd) + a Circle Programmable
- *    Wallet is provisioned as their managed claim wallet.
- *  - Claim/withdraw: accumulated escrow settles from the treasury → the address
- *    the creator provides (or their Circle PW) on Arc.
+ *  - Settlement: a reader's gross payment is split 95/5 — the creator's net
+ *    accrues to their escrow ledger (shown live), the 5% fee stays in the
+ *    treasury as platform revenue. No per-session on-chain call; settlement is
+ *    batched to withdrawal time (cheaper, matches Circle batching).
+ *  - Escrow: net earnings clear 7 days after they're earned, then become
+ *    withdrawable. A Circle Programmable Wallet is provisioned lazily as the
+ *    creator's managed claim wallet.
+ *  - Withdraw: cleared escrow settles from the treasury → the creator's address
+ *    on Arc (the real on-chain tx), and is moved into lifetime withdrawn.
  */
 import { payUrl, ensureGatewayBalance } from "@/lib/payer";
 import { circleEnabled, createCreatorWallet } from "@/lib/circle";
@@ -17,14 +20,15 @@ import {
   adjustUserBalance,
   getCreatorById,
   listChapters,
-  listPaymentsForCreator,
-  markCreatorClaimed,
+  recordCreatorWithdrawal,
   recordPayment,
   setCreatorCircleWallet,
   setFollowMode,
   updatePayment,
 } from "@/lib/db";
 import { bundlePrice } from "@/lib/pricing";
+import { ESCROW_HOLD_MS, splitFee } from "@/lib/money";
+import { getCreatorBalances } from "@/lib/treasury";
 import type { Creator } from "@/lib/supabase";
 
 export const MIN_SETTLE = 0.01;
@@ -71,53 +75,55 @@ export interface SettleSessionArgs {
 
 export interface SettleResult {
   paymentId: string;
-  status: "settled" | "escrowed" | "failed";
-  txHash?: string;
+  status: "settled" | "failed";
+  /** what the reader paid (gross) */
+  grossUsd?: number;
+  /** platform's 5% cut */
+  feeUsd?: number;
+  /** what the creator earned (net), held in 7-day escrow */
+  netUsd?: number;
   reason?: string;
 }
 
 /**
- * Settle a single reader→creator amount: debit the reader, then either route
- * directly to the creator's Arc wallet or escrow it (Circle PW provisioned).
+ * Settle a single reader→creator amount (escrow-batched):
+ *   1. split the gross 95/5,
+ *   2. debit the reader's ledger by the gross,
+ *   3. accrue the creator's net to escrow (clears in 7 days); the 5% fee stays
+ *      in the treasury as platform revenue.
+ * No on-chain call here — the real Arc settlement happens once, at withdrawal.
  * This is the core call Agent 1 (and the unlock flows) use.
  */
 export async function settleSession(args: SettleSessionArgs): Promise<SettleResult> {
   const { userId, creator, chapterId, sessionId, amountUsd } = args;
+  const { grossUsdc, feeUsdc, netUsdc } = splitFee(amountUsd);
+  const withdrawableAt = new Date(Date.now() + ESCROW_HOLD_MS).toISOString();
 
   const payment = await recordPayment({
     sessionId,
     userId,
     creatorId: creator.id,
     chapterId,
-    amountUsdc: amountUsd,
+    amountUsdc: grossUsdc,
+    feeUsdc,
+    netUsdc,
+    withdrawableAt,
     status: "pending",
   });
 
-  // 1. Debit the reader's ledger first (throws on insufficient balance).
+  // 1. Debit the reader's ledger by the gross (throws on insufficient balance).
   try {
-    await adjustUserBalance(userId, -amountUsd, args.debitKind ?? "session_debit", payment.id);
+    await adjustUserBalance(userId, -grossUsdc, args.debitKind ?? "session_debit", payment.id);
   } catch (e) {
     await updatePayment(payment.id, { status: "failed" });
     return { paymentId: payment.id, status: "failed", reason: (e as Error).message };
   }
 
-  // 2a. Direct route — settle treasury → creator wallet on Arc.
-  if (creator.wallet_address) {
-    try {
-      const txHash = await settleFromTreasury(creator.wallet_address, amountUsd);
-      await updatePayment(payment.id, { status: "settled", arc_tx_hash: txHash ?? null });
-      await adjustCreatorBalance(creator.id, amountUsd);
-      return { paymentId: payment.id, status: "settled", txHash };
-    } catch (e) {
-      await adjustUserBalance(userId, amountUsd, "refund", payment.id);
-      await updatePayment(payment.id, { status: "failed" });
-      return { paymentId: payment.id, status: "failed", reason: (e as Error).message };
-    }
-  }
-
-  // 2b. Escrow route — hold in treasury, accrue to creator, provision Circle PW.
-  await adjustCreatorBalance(creator.id, amountUsd);
+  // 2. Accrue the creator's net to escrow; the fee is retained in the treasury.
+  await adjustCreatorBalance(creator.id, netUsdc);
   await updatePayment(payment.id, { status: "settled" });
+
+  // Provision the creator's managed claim wallet lazily, on first earning.
   if (circleEnabled() && !creator.circle_wallet_id) {
     try {
       const w = await createCreatorWallet(creator.id);
@@ -126,7 +132,8 @@ export async function settleSession(args: SettleSessionArgs): Promise<SettleResu
       console.warn("[charon] Circle wallet provision failed (ledger-only escrow):", (e as Error).message);
     }
   }
-  return { paymentId: payment.id, status: "escrowed" };
+
+  return { paymentId: payment.id, status: "settled", grossUsd: grossUsdc, feeUsd: feeUsdc, netUsd: netUsdc };
 }
 
 /**
@@ -138,7 +145,7 @@ export async function unlockSeries(args: {
   userId: string;
   seriesId: string;
   creator: Creator;
-}): Promise<{ ok: boolean; amount: number; txHash?: string; reason?: string }> {
+}): Promise<{ ok: boolean; amount: number; reason?: string }> {
   const chapters = await listChapters(args.seriesId);
   if (!chapters.length) return { ok: false, amount: 0, reason: "no chapters to unlock" };
   const amount = bundlePrice(chapters);
@@ -153,34 +160,44 @@ export async function unlockSeries(args: {
   });
   if (result.status === "failed") return { ok: false, amount, reason: result.reason };
   await setFollowMode(args.userId, args.seriesId, "series_unlock");
-  return { ok: true, amount, txHash: result.txHash };
+  return { ok: true, amount };
+}
+
+export interface WithdrawResult {
+  ok: boolean;
+  txHash?: string;
+  /** net moved out of escrow */
+  amount: number;
+  available: number;
+  reason?: string;
 }
 
 /**
- * Pay out a creator's accumulated escrow to a destination address on Arc.
- * Settles real USDC from the treasury, then zeroes the creator's escrow.
+ * Withdraw cleared escrow to a destination address on Arc. Only earnings past
+ * their 7-day escrow window are withdrawable. Settles real USDC from the
+ * treasury, then moves the amount from escrow into lifetime withdrawn.
  */
-export async function claimPayout(
+export async function withdrawForCreator(
   creator: Creator,
+  amountUsd: number,
   destinationAddress: string,
-): Promise<{ ok: boolean; txHash?: string; amount: number; reason?: string }> {
-  const amount = Number(creator.balance_usd);
-  if (amount < MIN_SETTLE) return { ok: false, amount, reason: "nothing to claim" };
+): Promise<WithdrawResult> {
+  const { available } = await getCreatorBalances(creator.id);
+  if (amountUsd < MIN_SETTLE) return { ok: false, amount: 0, available, reason: "nothing to withdraw" };
+  if (amountUsd > available + 1e-9) {
+    return { ok: false, amount: 0, available, reason: "amount exceeds cleared balance" };
+  }
   try {
-    const txHash = await settleFromTreasury(destinationAddress, amount);
-    // Mark pending/escrowed payments as settled (best-effort audit) + zero balance.
-    const pays = await listPaymentsForCreator(creator.id);
-    await Promise.all(
-      pays.filter((p) => p.status === "pending").map((p) => updatePayment(p.id, { status: "settled" })),
-    );
-    await markCreatorClaimed(creator.id);
-    return { ok: true, txHash, amount };
+    const txHash = await settleFromTreasury(destinationAddress, amountUsd);
+    await recordCreatorWithdrawal(creator.id, amountUsd);
+    const after = await getCreatorBalances(creator.id);
+    return { ok: true, txHash, amount: amountUsd, available: after.available };
   } catch (e) {
-    return { ok: false, amount, reason: (e as Error).message };
+    return { ok: false, amount: 0, available, reason: (e as Error).message };
   }
 }
 
-/** Re-fetch a creator and return whether they now have escrow to claim. */
+/** Re-fetch a creator (used after escrow changes). */
 export async function refreshCreator(creatorId: string): Promise<Creator | null> {
   return getCreatorById(creatorId);
 }

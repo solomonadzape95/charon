@@ -21,12 +21,19 @@ interface HistoryItem {
   destination: string;
   at: string;
 }
+interface Balances {
+  available: number;
+  pending: number;
+  total: number;
+  lifetime: number;
+}
 
 const BANK_FEE = 0.015;
 
 export default function WithdrawPage() {
   const router = useRouter();
   const [creator, setCreator] = useState<Creator | null>(null);
+  const [balances, setBalances] = useState<Balances>({ available: 0, pending: 0, total: 0, lifetime: 0 });
   const [dest, setDest] = useState<"usdc_wallet" | "bank">("usdc_wallet");
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
@@ -42,7 +49,15 @@ export default function WithdrawPage() {
           const c = d.creator as Creator;
           setCreator(c);
           setDest(c.wallet_address ? "usdc_wallet" : "bank");
-          setAmount(Number(c.balance_usd).toFixed(2));
+        }
+      })
+      .catch(() => {});
+    fetch(`/api/creator/withdraw?creatorId=${id}`)
+      .then((r) => r.json())
+      .then((b: Balances) => {
+        if (typeof b.available === "number") {
+          setBalances(b);
+          setAmount(b.available.toFixed(2));
         }
       })
       .catch(() => {});
@@ -88,7 +103,7 @@ export default function WithdrawPage() {
       };
       setDone(item);
       setHistory((h) => [item, ...h]);
-      setCreator({ ...creator, balance_usd: d.balance });
+      setBalances((b) => ({ ...b, available: Number(d.balance), total: Number(d.balance) + b.pending }));
       setAmount(Number(d.balance).toFixed(2));
     } finally {
       setBusy(false);
@@ -104,7 +119,7 @@ export default function WithdrawPage() {
     );
   }
 
-  const available = Number(creator.balance_usd);
+  const available = balances.available;
   const amt = Number(amount) || 0;
   const fee = dest === "bank" ? Math.round(amt * BANK_FEE * 100) / 100 : 0;
   const receive = Math.max(0, Math.round((amt - fee) * 100) / 100);
@@ -128,8 +143,8 @@ export default function WithdrawPage() {
           </div>
           <div className="bg-[var(--color-surface)] p-6">
             <p className="text-utility text-[var(--color-muted)]">Pending release</p>
-            <p className="font-display text-4xl font-bold text-[var(--color-muted)]">$0.00</p>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">Earnings settle to you instantly — no escrow hold.</p>
+            <p className="font-display text-4xl font-bold text-[var(--color-muted)]">${balances.pending.toFixed(2)}</p>
+            <p className="mt-1 text-xs text-[var(--color-muted)]">Earnings clear 7 days after they’re earned, then become withdrawable.</p>
           </div>
         </section>
 

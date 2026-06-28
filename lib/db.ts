@@ -308,7 +308,10 @@ export async function recordPayment(input: {
   userId: string;
   creatorId: string;
   chapterId: string;
-  amountUsdc: number;
+  amountUsdc: number; // gross (reader-paid)
+  feeUsdc?: number; // platform cut
+  netUsdc?: number; // creator net
+  withdrawableAt?: string | null; // escrow clear time
   status?: PaymentStatus;
   arcTxHash?: string | null;
 }): Promise<Payment> {
@@ -320,6 +323,9 @@ export async function recordPayment(input: {
       creator_id: input.creatorId,
       chapter_id: input.chapterId,
       amount_usdc: input.amountUsdc,
+      fee_usdc: input.feeUsdc ?? 0,
+      net_usdc: input.netUsdc ?? input.amountUsdc,
+      withdrawable_at: input.withdrawableAt ?? null,
       status: input.status ?? "pending",
       arc_tx_hash: input.arcTxHash ?? null,
     })
@@ -327,6 +333,22 @@ export async function recordPayment(input: {
     .single();
   if (error) throw new Error(error.message);
   return data as Payment;
+}
+
+/**
+ * Record a creator withdrawal: move `amountUsd` out of unwithdrawn escrow
+ * (balance_usd) into lifetime withdrawn. Called after the on-chain payout settles.
+ */
+export async function recordCreatorWithdrawal(creatorId: string, amountUsd: number): Promise<void> {
+  const c = await getCreatorById(creatorId);
+  if (!c) return;
+  await supabaseService()
+    .from("creators")
+    .update({
+      balance_usd: Math.max(0, Number(c.balance_usd) - amountUsd),
+      total_withdrawn_usdc: Number(c.total_withdrawn_usdc) + amountUsd,
+    })
+    .eq("id", creatorId);
 }
 
 export async function updatePayment(id: string, patch: Partial<Payment>): Promise<void> {

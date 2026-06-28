@@ -40,8 +40,9 @@ create table public.creators (
   circle_wallet_id text,
   circle_wallet_address text,
   payout_preference text not null default 'usdc_wallet',  -- usdc_wallet | bank
-  total_earned_usdc numeric not null default 0,           -- lifetime settled
-  balance_usd numeric not null default 0,                 -- current claimable escrow
+  total_earned_usdc numeric not null default 0,           -- lifetime net earned (creator's 95%)
+  balance_usd numeric not null default 0,                 -- unwithdrawn net (available + pending escrow)
+  total_withdrawn_usdc numeric not null default 0,        -- lifetime withdrawn out of the treasury
   claimed boolean not null default false,
   claim_token text unique default gen_random_uuid()::text
 );
@@ -118,13 +119,17 @@ create table public.payments (
   user_id uuid references public.users(id) on delete set null,
   creator_id uuid references public.creators(id) on delete set null,
   chapter_id uuid references public.chapters(id) on delete set null,
-  amount_usdc numeric not null,
+  amount_usdc numeric not null,                      -- gross: what the reader paid
+  fee_usdc numeric not null default 0,               -- platform's 5% cut
+  net_usdc numeric,                                  -- creator's net (gross - fee)
+  withdrawable_at timestamptz,                       -- escrow clears at created_at + 7d
   arc_tx_hash text,
   status text not null default 'pending'             -- pending | settled | failed
 );
 create index payments_creator_idx on public.payments(creator_id);
 create index payments_user_idx on public.payments(user_id);
 create index payments_status_idx on public.payments(status);
+create index payments_escrow_idx on public.payments(creator_id, withdrawable_at) where status = 'settled';
 
 -- ── ledger (reader balance audit trail) ───────────────────
 create table public.ledger (

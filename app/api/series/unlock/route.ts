@@ -27,5 +27,5 @@ export async function POST(req: NextRequest) {
 
   const result = await unlockSeries({ userId, seriesId, creator });
   if (!result.ok) return NextResponse.json({ error: result.reason ?? "unlock failed" }, { status: 400 });
-  return NextResponse.json({ unlocked: true, amount: result.amount, txHash: result.txHash });
+  return NextResponse.json({ unlocked: true, amount: result.amount });
 }

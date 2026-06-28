@@ -120,8 +120,7 @@ export async function POST(req: NextRequest) {
     Number(user.balance_usd),
   );
 
-  let settleStatus: "settled" | "escrowed" | "failed" | "skipped" = "skipped";
-  let txHash: string | undefined;
+  let settleStatus: "settled" | "failed" | "skipped" = "skipped";
   let amount = valuation.amountUsd;
   let reasoning = valuation.reasoning;
 
@@ -134,7 +133,6 @@ export async function POST(req: NextRequest) {
       amountUsd: amount,
     });
     settleStatus = result.status;
-    txHash = result.txHash;
     if (result.status === "failed") {
       amount = 0;
       reasoning = "Couldn't settle this session — your balance may be low.";
@@ -174,7 +172,6 @@ export async function POST(req: NextRequest) {
     creator: creator.name ?? series.title,
     seriesTitle: series.title,
     chapterTitle: chapter.title ?? `Chapter ${chapter.chapter_number}`,
-    txHash,
     balance: Math.max(0, Number(user.balance_usd) - amount),
   });
 }

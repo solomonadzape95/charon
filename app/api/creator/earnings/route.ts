@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCreatorById, listPaymentsForCreator, listSeriesForCreator } from "@/lib/db";
+import { getCreatorBalances } from "@/lib/treasury";
 import { supabaseService } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -15,9 +16,10 @@ export async function GET(req: NextRequest) {
   const creator = await getCreatorById(creatorId);
   if (!creator) return NextResponse.json({ error: "not found" }, { status: 404 });
 
-  const [payments, series] = await Promise.all([
+  const [payments, series, balances] = await Promise.all([
     listPaymentsForCreator(creatorId, 50),
     listSeriesForCreator(creatorId),
+    getCreatorBalances(creatorId),
   ]);
 
   // Resolve chapter titles for recent payments.
@@ -41,14 +43,18 @@ export async function GET(req: NextRequest) {
       name: creator.name,
       balance_usd: Number(creator.balance_usd),
       total_earned_usdc: Number(creator.total_earned_usdc),
+      total_withdrawn_usdc: Number(creator.total_withdrawn_usdc),
       wallet_address: creator.wallet_address,
     },
+    balances,
     series: series.map((s) => ({ id: s.id, title: s.title, status: s.status })),
     payments: payments
       .filter((p) => p.status === "settled")
       .map((p) => ({
         id: p.id,
-        amount: Number(p.amount_usdc),
+        amount: Number(p.amount_usdc), // gross (reader paid)
+        net: Number(p.net_usdc ?? p.amount_usdc), // creator earned
+        fee: Number(p.fee_usdc), // platform cut
         chapter: p.chapter_id ? titles[p.chapter_id] : null,
         tx: p.arc_tx_hash,
         created_at: p.created_at,

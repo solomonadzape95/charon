@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, PenLine, BookOpen, Coins, AlertTriangle, Wallet } from "lucide-react";
+import { Users, PenLine, BookOpen, Coins, AlertTriangle, Wallet, ShieldCheck, ShieldAlert } from "lucide-react";
 
 interface Overview {
   counts: { users: number; creators: number; claimedCreators: number; unclaimedCreators: number; series: number; chapters: number };
@@ -16,6 +16,15 @@ interface Overview {
     paymentsSettled: number;
     paymentsFailed: number;
     paymentsPending: number;
+  };
+  reconciliation: {
+    totalDeposits: number;
+    readerFloat: number;
+    creatorUnpaid: number;
+    platformRevenue: number;
+    totalWithdrawn: number;
+    residual: number;
+    balanced: boolean;
   };
   recentPayments: { id: string; amount: number; status: string; created_at: string }[];
   recentSessions: { amount: number; reasoning: string | null; created_at: string }[];
@@ -39,12 +48,15 @@ export default function AdminOverview() {
         <Money icon={Coins} label="Settled all-time" value={d.money.totalSettled} accent />
         <Money icon={Coins} label="Settled today" value={d.money.settledToday} />
         <Money icon={Coins} label="Settled this week" value={d.money.settledWeek} />
-        <Money icon={Wallet} label="Platform fee (≈5%)" value={d.money.platformFee} />
+        <Money icon={Wallet} label="Platform fee (5%)" value={d.money.platformFee} accent />
         <Money icon={Wallet} label="Escrow held (unclaimed)" value={d.money.escrowHeld} />
         <Money icon={Coins} label="Lifetime creator earnings" value={d.money.lifetimeEarned} />
         <Money icon={Wallet} label="Total deposits" value={d.money.totalDeposits} />
         <Money icon={AlertTriangle} label="Failed payments" value={d.money.paymentsFailed} count warn={d.money.paymentsFailed > 0} />
       </section>
+
+      {/* Treasury reconciliation */}
+      <Reconciliation r={d.reconciliation} />
 
       {/* Counts */}
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
@@ -88,6 +100,41 @@ export default function AdminOverview() {
           </ul>
         </section>
       </div>
+    </div>
+  );
+}
+
+function Reconciliation({ r }: { r: Overview["reconciliation"] }) {
+  const Icon = r.balanced ? ShieldCheck : ShieldAlert;
+  const tone = r.balanced ? "var(--color-accent-2)" : "#f87171";
+  return (
+    <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+      <div className="flex items-center gap-2">
+        <Icon size={18} style={{ color: tone }} strokeWidth={1.6} />
+        <h2 className="font-display text-lg font-semibold">Treasury reconciliation</h2>
+        <span className="tabular ml-auto text-sm font-semibold" style={{ color: tone }}>
+          {r.balanced ? "Balanced" : `Drift $${Math.abs(r.residual).toFixed(6)}`}
+        </span>
+      </div>
+      <p className="mt-1 text-xs text-[var(--color-muted)]">
+        deposits = reader float + creator escrow + platform revenue + withdrawn
+      </p>
+      <div className="mt-4 grid grid-cols-2 gap-px border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-5">
+        <ReconCell label="Deposits in" value={r.totalDeposits} />
+        <ReconCell label="Reader float" value={r.readerFloat} />
+        <ReconCell label="Creator escrow" value={r.creatorUnpaid} />
+        <ReconCell label="Platform revenue" value={r.platformRevenue} />
+        <ReconCell label="Withdrawn" value={r.totalWithdrawn} />
+      </div>
+    </section>
+  );
+}
+
+function ReconCell({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="bg-[var(--color-surface)] p-4">
+      <p className="tabular text-lg font-semibold">${value.toFixed(2)}</p>
+      <p className="text-utility mt-0.5 text-[var(--color-muted)]">{label}</p>
     </div>
   );
 }

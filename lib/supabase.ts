@@ -51,6 +51,7 @@ export interface Creator {
   payout_preference: "usdc_wallet" | "bank";
   total_earned_usdc: number;
   balance_usd: number;
+  total_withdrawn_usdc: number;
   claimed: boolean;
   claim_token: string;
 }
@@ -125,6 +126,9 @@ export interface Payment {
   creator_id: string | null;
   chapter_id: string | null;
   amount_usdc: number;
+  fee_usdc: number;
+  net_usdc: number | null;
+  withdrawable_at: string | null;
   arc_tx_hash: string | null;
   status: PaymentStatus;
 }
