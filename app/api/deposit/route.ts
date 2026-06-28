@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deposit } from "@/lib/payments";
-import { getUserById } from "@/lib/db";
+import { getUserById, recordSandboxDeposit } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -27,5 +27,10 @@ export async function POST(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "user not found" }, { status: 404 });
 
   const balance = await deposit(userId, amount);
+  try {
+    await recordSandboxDeposit(userId, amount);
+  } catch {
+    /* non-fatal: balance is already credited */
+  }
   return NextResponse.json({ balance });
 }

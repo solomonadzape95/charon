@@ -28,6 +28,7 @@ interface Overview {
   };
   recentPayments: { id: string; amount: number; status: string; created_at: string }[];
   recentSessions: { amount: number; reasoning: string | null; created_at: string }[];
+  recentDeposits: { id: string; amount: number; method: string; tx: string | null; created_at: string }[];
 }
 
 export default function AdminOverview() {
@@ -100,6 +101,24 @@ export default function AdminOverview() {
           </ul>
         </section>
       </div>
+
+      {/* Deposits */}
+      <section className="space-y-3">
+        <h2 className="font-display text-xl font-semibold">Recent deposits</h2>
+        <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)]">
+          {d.recentDeposits.map((dep) => (
+            <li key={dep.id} className="flex items-center justify-between gap-3 bg-[var(--color-surface)] px-4 py-2.5 text-sm">
+              <span className="inline-flex items-center gap-2">
+                <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-utility capitalize text-[var(--color-muted)]">{dep.method}</span>
+                {dep.tx && <span className="tabular text-utility text-[var(--color-muted)]">{dep.tx.slice(0, 8)}…{dep.tx.slice(-6)}</span>}
+              </span>
+              <span className="ml-auto mr-3 text-utility text-[var(--color-muted)]">{new Date(dep.created_at).toLocaleString()}</span>
+              <span className="tabular font-semibold text-[var(--color-accent-2)]">+${dep.amount.toFixed(2)}</span>
+            </li>
+          ))}
+          {!d.recentDeposits.length && <li className="px-4 py-3 text-sm text-[var(--color-muted)]">No deposits yet.</li>}
+        </ul>
+      </section>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccountNav } from "@/components/AccountNav";
+import { DepositPanel } from "@/components/DepositPanel";
 
 interface WalletData {
   balance: number;
@@ -22,7 +23,6 @@ export default function WalletPage() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [w, setW] = useState<WalletData | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const load = (id: string) => fetch(`/api/me/wallet?userId=${id}`).then((r) => r.json()).then(setW).catch(() => {});
 
@@ -36,21 +36,6 @@ export default function WalletPage() {
     load(id);
   }, [router]);
 
-  async function deposit(amount: number) {
-    if (!userId) return;
-    setBusy(true);
-    try {
-      await fetch("/api/deposit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, amountUsd: amount }),
-      });
-      await load(userId);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <>
       <AccountNav />
@@ -58,14 +43,9 @@ export default function WalletPage() {
         <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
           <p className="text-utility text-[var(--color-muted)]">Balance</p>
           <p className="font-display text-5xl font-bold text-coin">${(w?.balance ?? 0).toFixed(2)}</p>
-          <div className="mt-5 flex flex-wrap items-center gap-2">
-            {[3, 5, 10].map((a) => (
-              <button key={a} disabled={busy} onClick={() => deposit(a)} className="btn-outline">
-                + ${a}
-              </button>
-            ))}
-          </div>
         </section>
+
+        {userId && <DepositPanel userId={userId} onCredited={() => load(userId)} />}
 
         <div className="grid grid-cols-2 gap-px border border-[var(--color-border)] bg-[var(--color-border)]">
           <div className="bg-[var(--color-bg)] p-5">

@@ -13,7 +13,7 @@ export async function GET() {
   if (denied) return denied;
   const db = supabaseService();
 
-  const [usersC, creators, seriesC, chaptersC, payments, deposits, recentPays, recentSess, recon] = await Promise.all([
+  const [usersC, creators, seriesC, chaptersC, payments, deposits, recentPays, recentSess, recon, recentDeposits] = await Promise.all([
     db.from("users").select("id", { count: "exact", head: true }),
     db.from("creators").select("balance_usd, total_earned_usdc, claimed"),
     db.from("series").select("id", { count: "exact", head: true }),
@@ -23,6 +23,7 @@ export async function GET() {
     db.from("payments").select("id, amount_usdc, fee_usdc, net_usdc, status, created_at, creator_id, chapter_id").order("created_at", { ascending: false }).limit(8),
     db.from("sessions").select("amount_settled_usdc, agent_reasoning, created_at").not("amount_settled_usdc", "is", null).order("created_at", { ascending: false }).limit(8),
     reconcile(),
+    db.from("deposits").select("id, amount_usd, method, tx_hash, created_at").order("created_at", { ascending: false }).limit(8),
   ]);
 
   const creatorRows = creators.data ?? [];
@@ -67,6 +68,13 @@ export async function GET() {
       amount: Number((s as { amount_settled_usdc: number }).amount_settled_usdc),
       reasoning: (s as { agent_reasoning: string | null }).agent_reasoning,
       created_at: (s as { created_at: string }).created_at,
+    })),
+    recentDeposits: (recentDeposits.data ?? []).map((d) => ({
+      id: (d as { id: string }).id,
+      amount: Number((d as { amount_usd: number }).amount_usd),
+      method: (d as { method: string }).method,
+      tx: (d as { tx_hash: string | null }).tx_hash,
+      created_at: (d as { created_at: string }).created_at,
     })),
   });
 }

@@ -82,6 +82,58 @@ export async function grantWelcomeCreditOnce(
   return { granted: true, balance };
 }
 
+/**
+ * Credit an on-chain deposit, keyed idempotently by tx hash. The first insert
+ * wins; a duplicate tx_hash (UNIQUE) means it was already credited, so we don't
+ * credit the ledger twice. Returns the user's resulting balance.
+ */
+export async function creditDepositByTx(input: {
+  userId: string;
+  txHash: string;
+  amountUsd: number;
+  method: "wallet" | "manual";
+  fromAddress?: string | null;
+}): Promise<{ credited: boolean; already: boolean; balance: number }> {
+  const db = supabaseService();
+  const { data, error } = await db
+    .from("deposits")
+    .insert({
+      user_id: input.userId,
+      amount_usd: input.amountUsd,
+      method: input.method,
+      tx_hash: input.txHash,
+      from_address: input.fromAddress ?? null,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    if (error.code === "23505") {
+      const u = await getUserById(input.userId);
+      return { credited: false, already: true, balance: Number(u?.balance_usd ?? 0) };
+    }
+    throw new Error(error.message);
+  }
+  const balance = await adjustUserBalance(input.userId, input.amountUsd, "deposit", (data as { id: string }).id);
+  return { credited: true, already: false, balance };
+}
+
+/** Log a sandbox (test) top-up so it shows in the admin deposits feed. */
+export async function recordSandboxDeposit(userId: string, amountUsd: number): Promise<void> {
+  await supabaseService().from("deposits").insert({ user_id: userId, amount_usd: amountUsd, method: "sandbox" });
+}
+
+export async function listRecentDeposits(limit = 20): Promise<
+  { id: string; user_id: string | null; amount_usd: number; method: string; tx_hash: string | null; created_at: string }[]
+> {
+  const { data } = await supabaseService()
+    .from("deposits")
+    .select("id, user_id, amount_usd, method, tx_hash, created_at")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data as any[]) ?? [];
+}
+
 // ── creators ───────────────────────────────────────────────
 export async function getCreatorById(id: string): Promise<Creator | null> {
   const { data } = await supabaseService().from("creators").select("*").eq("id", id).maybeSingle();
