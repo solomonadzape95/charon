@@ -22,8 +22,9 @@ create table public.users (
   id uuid primary key default gen_random_uuid(),
   created_at timestamptz not null default now(),
   email text unique,
-  balance_usd numeric not null default 0,        -- ledger balance, USDC held in the pooled treasury
-  session_cap_usd numeric not null default 1.00  -- safety ceiling on a single session settlement
+  balance_usd numeric not null default 0,         -- ledger balance, USDC held in the pooled treasury
+  session_cap_usd numeric not null default 1.00,  -- safety ceiling on a single session settlement
+  welcome_credited boolean not null default false -- one-time new-reader bonus already granted?
 );
 
 -- ── creators ──────────────────────────────────────────────

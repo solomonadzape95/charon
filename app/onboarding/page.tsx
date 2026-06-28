@@ -16,8 +16,7 @@ interface Series {
 }
 
 const LS_KEY = "charon_user_id";
-const CREDIT_KEY = "charon_welcome_credit";
-const WELCOME_CREDIT = 0.5;
+const WELCOME_CREDIT = 0.5; // display default; the server is the source of truth
 const AMOUNTS = [3, 5, 10];
 
 export default function Onboarding() {
@@ -30,21 +29,17 @@ export default function Onboarding() {
   const [busy, setBusy] = useState(false);
   const [series, setSeries] = useState<Series[]>([]);
 
-  // Apply the one-time $0.50 welcome credit the first time a reader onboards.
+  // Apply the one-time welcome credit. Idempotent server-side — the DB grants it
+  // at most once per reader, so the dev double-render can't double-credit.
   const applyWelcomeCredit = useCallback(async (id: string) => {
-    if (localStorage.getItem(CREDIT_KEY)) {
-      setCreditApplied(true);
-      return;
-    }
     try {
-      const res = await fetch("/api/deposit", {
+      const res = await fetch("/api/me/welcome-credit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: id, amountUsd: WELCOME_CREDIT }),
+        body: JSON.stringify({ userId: id }),
       });
       const data = await res.json();
       if (typeof data.balance === "number") setBalance(data.balance);
-      localStorage.setItem(CREDIT_KEY, "1");
       setCreditApplied(true);
     } catch {
       /* ignore */

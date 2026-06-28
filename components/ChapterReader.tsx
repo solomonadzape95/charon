@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Settings2, X, Minus, Plus, ChevronLeft, ChevronRight, Bookmark, BookmarkCheck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Settings2, X, Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, Bookmark, BookmarkCheck } from "lucide-react";
 import { SessionSummary, type SessionResult } from "@/components/SessionSummary";
 import { saveProgress, getChapterPct, isBookmarked, toggleBookmark } from "@/lib/reading";
 
@@ -18,6 +19,7 @@ interface Props {
   nextChapterId: string | null;
   prevChapterId: string | null;
   chapterNumber?: number;
+  chapters?: { id: string; n: number; title: string }[];
   guest?: boolean;
 }
 
@@ -65,6 +67,7 @@ function nextBingeDepth(): number {
 }
 
 export function ChapterReader(props: Props) {
+  const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [summary, setSummary] = useState<SessionResult | null>(null);
   const [comment, setComment] = useState("");
@@ -278,7 +281,17 @@ export function ChapterReader(props: Props) {
             <ChevronLeft size={16} className="shrink-0" />
             <span className="truncate">{props.seriesTitle}</span>
           </Link>
-          <p className="text-utility hidden min-w-0 truncate text-center sm:block">{startStr}</p>
+          {props.chapters && props.chapters.length > 1 ? (
+            <ChapterPicker
+              chapters={props.chapters}
+              currentId={props.chapterId}
+              label={startStr}
+              theme={theme}
+              onPick={(id) => router.push(`/chapter/${id}`)}
+            />
+          ) : (
+            <p className="text-utility hidden min-w-0 truncate text-center sm:block">{startStr}</p>
+          )}
           <div className="flex items-center justify-end gap-2.5">
             <span ref={progressTextRef} className="text-utility tabular hidden w-9 text-right sm:inline">
               0%
@@ -401,6 +414,85 @@ export function ChapterReader(props: Props) {
       </div>
 
       {summary && <SessionSummary result={summary} onClose={() => setSummary(null)} />}
+    </div>
+  );
+}
+
+function ChapterPicker({
+  chapters,
+  currentId,
+  label,
+  theme,
+  onPick,
+}: {
+  chapters: { id: string; n: number; title: string }[];
+  currentId: string;
+  label: string;
+  theme: { bg: string; fg: string; chrome: string; line: string; surface: string };
+  onPick: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative mx-auto">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        title="Jump to chapter"
+        className="text-utility inline-flex max-w-[60vw] items-center gap-1.5 truncate px-2 py-1 transition-opacity hover:opacity-70 sm:max-w-xs"
+        style={{ color: theme.chrome }}
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown size={14} className="shrink-0" />
+      </button>
+      {open && (
+        <div
+          role="listbox"
+          className="absolute left-1/2 top-full z-40 mt-2 max-h-[60vh] w-64 -translate-x-1/2 overflow-y-auto py-1 shadow-2xl"
+          style={{ background: theme.surface, color: theme.fg, border: `1px solid ${theme.line}` }}
+        >
+          {chapters.map((c) => {
+            const active = c.id === currentId;
+            return (
+              <button
+                key={c.id}
+                role="option"
+                aria-selected={active}
+                onClick={() => {
+                  setOpen(false);
+                  if (!active) onPick(c.id);
+                }}
+                className="flex w-full items-baseline gap-2 px-3 py-2 text-left text-sm transition-colors hover:opacity-80"
+                style={{
+                  background: active ? "color-mix(in srgb, var(--color-gold) 14%, transparent)" : "transparent",
+                  color: active ? "var(--color-gold)" : theme.fg,
+                }}
+              >
+                <span className="tabular shrink-0 opacity-60">{c.n}</span>
+                <span className="truncate">{c.title}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

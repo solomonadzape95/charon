@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
 import { Logo } from "@/components/Logo";
 import { Loading } from "@/components/Loading";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [state, setState] = useState<{ ok: boolean; email: string | null } | null>(null);
 
   useEffect(() => {
@@ -16,6 +18,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       .catch(() => setState({ ok: false, email: null }));
   }, []);
 
+  // The login page is the one /admin/* route that must render without the guard.
+  if (pathname === "/admin/login") return <>{children}</>;
+
   if (state === null) return <Loading full label="Loading admin…" />;
 
   if (!state.ok) {
@@ -24,10 +29,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="max-w-sm text-center">
           <Logo size={48} className="mx-auto text-[var(--color-gold)]" />
           <h1 className="font-display mt-5 text-2xl font-semibold">Admins only</h1>
-          <p className="mt-2 text-[var(--color-muted)]">This area is restricted. Sign in with an admin account to continue.</p>
+          <p className="mt-2 text-[var(--color-muted)]">This area is restricted. Sign in to continue.</p>
           <div className="mt-6 flex justify-center gap-2">
-            <Link href="/join" className="btn-coin">
-              Sign in
+            <Link href="/admin/login" className="btn-coin">
+              Admin sign in
             </Link>
             <Link href="/" className="btn-outline">
               Home

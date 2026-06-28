@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Logo } from "@/components/Logo";
 
 const TABS = [
@@ -14,6 +14,18 @@ const TABS = [
 
 export function AdminNav({ email }: { email?: string | null }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function signOut() {
+    try {
+      await fetch("/api/admin/logout", { method: "POST" });
+    } catch {
+      /* ignore */
+    }
+    router.replace("/admin/login");
+    router.refresh();
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-bg)_85%,transparent)] backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3.5">
@@ -28,6 +40,9 @@ export function AdminNav({ email }: { email?: string | null }) {
           <Link href="/dashboard" className="btn-outline">
             View app →
           </Link>
+          <button onClick={signOut} className="btn-outline">
+            Sign out
+          </button>
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-6 pb-2.5">

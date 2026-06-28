@@ -43,7 +43,7 @@ export async function createUser(email: string): Promise<User> {
 export async function adjustUserBalance(
   userId: string,
   deltaUsd: number,
-  kind: "deposit" | "session_debit" | "unlock_debit" | "refund",
+  kind: "deposit" | "welcome" | "session_debit" | "unlock_debit" | "refund",
   refId?: string | null,
 ): Promise<number> {
   const db = supabaseService();
@@ -54,6 +54,32 @@ export async function adjustUserBalance(
   await db.from("users").update({ balance_usd: next }).eq("id", userId);
   await db.from("ledger").insert({ user_id: userId, kind, amount_usd: deltaUsd, ref_id: refId ?? null });
   return next;
+}
+
+/**
+ * Grant the one-time new-reader welcome credit, exactly once per user.
+ * The `welcome_credited` flag is flipped false→true atomically (a conditional
+ * UPDATE that only one concurrent request can win), so a double-fired client
+ * effect or a retry can never double-credit. Returns whether this call granted.
+ */
+export async function grantWelcomeCreditOnce(
+  userId: string,
+  amountUsd: number,
+): Promise<{ granted: boolean; balance: number }> {
+  const db = supabaseService();
+  const { data: claimed } = await db
+    .from("users")
+    .update({ welcome_credited: true })
+    .eq("id", userId)
+    .eq("welcome_credited", false)
+    .select("id")
+    .maybeSingle();
+  if (!claimed) {
+    const u = await getUserById(userId);
+    return { granted: false, balance: Number(u?.balance_usd ?? 0) };
+  }
+  const balance = await adjustUserBalance(userId, amountUsd, "welcome");
+  return { granted: true, balance };
 }
 
 // ── creators ───────────────────────────────────────────────

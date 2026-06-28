@@ -36,6 +36,7 @@ export interface User {
   email: string | null;
   balance_usd: number;
   session_cap_usd: number;
+  welcome_credited: boolean;
 }
 
 export interface Creator {
@@ -137,7 +138,7 @@ export interface LedgerEntry {
   id: string;
   created_at: string;
   user_id: string;
-  kind: "deposit" | "session_debit" | "unlock_debit" | "refund";
+  kind: "deposit" | "welcome" | "session_debit" | "unlock_debit" | "refund";
   amount_usd: number;
   ref_id: string | null;
 }

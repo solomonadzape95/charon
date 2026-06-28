@@ -55,6 +55,11 @@ export default async function ChapterPage({ params }: { params: Promise<{ id: st
       nextChapterId={next?.id ?? null}
       prevChapterId={prev?.id ?? null}
       chapterNumber={chapter.chapter_number}
+      chapters={chapters.map((c) => ({
+        id: c.id,
+        n: c.chapter_number,
+        title: c.title ?? `Chapter ${c.chapter_number}`,
+      }))}
       guest={guest}
     />
   );
