@@ -108,6 +108,30 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
         }
       }
 
+      // Confirm the wallet is actually on Arc before spending (a silent failed
+      // switch would otherwise submit on the wrong chain → "have 0").
+      const currentChain = ((await eth.request({ method: "eth_chainId" })) as string) ?? "";
+      if (currentChain.toLowerCase() !== info.chainIdHex.toLowerCase()) {
+        setStatus({ kind: "error", msg: `Your wallet didn't switch to ${info.network}. Switch networks in your wallet and retry.` });
+        return;
+      }
+
+      // Pre-check the *selected* account's native balance, so a wrong/empty
+      // account surfaces clearly instead of a cryptic "insufficient funds".
+      const value = parseEther(String(amt));
+      const headroom = parseEther("0.5"); // gas (~0.26 USDC) + margin
+      const balHex = ((await eth.request({ method: "eth_getBalance", params: [account, "latest"] })) as string) ?? "0x0";
+      const balance = BigInt(balHex);
+      if (balance < value + headroom) {
+        const bal = Number(balance) / 1e18;
+        const short = `${account.slice(0, 6)}…${account.slice(-4)}`;
+        setStatus({
+          kind: "error",
+          msg: `Account ${short} holds ${bal.toFixed(3)} USDC on ${info.network} — not enough for $${amt.toFixed(2)} + gas. Fund this exact account at the faucet, or switch to your funded account in your wallet.`,
+        });
+        return;
+      }
+
       const chain = {
         id: info.chainId,
         name: info.network,
@@ -122,7 +146,7 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
         account,
         chain,
         to: info.treasuryAddress as `0x${string}`,
-        value: parseEther(String(amt)),
+        value,
       });
       await verify(hash, "wallet");
     } catch (e) {
@@ -261,7 +285,7 @@ function AmountField({ amount, setAmount }: { amount: string; setAmount: (v: str
       <p className="text-utility mb-2 text-[var(--color-muted)]">Amount</p>
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]">$</span>
-        <input type="number" min="0" step="0.5" value={amount} onChange={(e) => setAmount(e.target.value)} className="charon-input w-full pl-7" />
+        <input type="number" min="0" step="0.5" value={amount} onChange={(e) => setAmount(e.target.value)} className="charon-input border w-11/12 pl-7" />
       </div>
     </div>
   );
