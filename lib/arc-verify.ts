@@ -112,5 +112,22 @@ export async function verifyUsdcDeposit(txHash: string, treasury: string): Promi
   if (totalUsd === 0) {
     return { ok: false, reason: "no USDC transfer to the treasury found in this transaction" };
   }
+
+  // Recency guard. Uniqueness (DB) already blocks reusing the same hash; this
+  // additionally refuses stale transactions — an old or someone-else's transfer
+  // to the treasury can't be claimed as a fresh deposit. Configurable; default 24h.
+  try {
+    const maxAgeMin = Number(process.env.DEPOSIT_MAX_AGE_MINUTES) > 0 ? Number(process.env.DEPOSIT_MAX_AGE_MINUTES) : 1440;
+    if (receipt.blockNumber != null) {
+      const block = await rpc().getBlock({ blockNumber: receipt.blockNumber });
+      const ageMin = (Date.now() - Number(block.timestamp) * 1000) / 60_000;
+      if (ageMin > maxAgeMin) {
+        return { ok: false, reason: `this transaction is too old to credit (older than ${maxAgeMin} minutes)` };
+      }
+    }
+  } catch {
+    /* block lookup failed — uniqueness still protects against replay */
+  }
+
   return { ok: true, amountUsd: totalUsd, from };
 }
