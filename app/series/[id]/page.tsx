@@ -4,12 +4,14 @@ import {
   getCreatorById,
   getSeriesById,
   getSeriesBySlug,
+  getUserByEmail,
   listAnnouncementsForSeries,
   listChapters,
   listSeries,
 } from "@/lib/db";
-import { Megaphone } from "lucide-react";
+import { Megaphone, Check } from "lucide-react";
 import { supabaseService } from "@/lib/supabase";
+import { supabaseServerAuth } from "@/lib/supabase-server";
 import { PaymentModes } from "@/components/PaymentModes";
 import { SeriesTabs } from "@/components/SeriesTabs";
 import { LibraryButton } from "@/components/LibraryButton";
@@ -48,6 +50,37 @@ export default async function SeriesPage({
         .order("created_at", { ascending: false })
         .limit(14)
     : { data: [] as { reader_comment: string; created_at: string; chapter_id: string }[] };
+
+  // Which chapters has THIS reader already read / own? (drives the "Read" marks)
+  const ownedChapterIds = new Set<string>();
+  let unlockedSeries = false;
+  const {
+    data: { user: authUser },
+  } = await (await supabaseServerAuth()).auth.getUser();
+  if (authUser?.email) {
+    const appUser = await getUserByEmail(authUser.email.trim().toLowerCase());
+    if (appUser) {
+      const { data: follow } = await db
+        .from("follows")
+        .select("mode")
+        .eq("user_id", appUser.id)
+        .eq("series_id", series.id)
+        .maybeSingle();
+      unlockedSeries = (follow as { mode?: string } | null)?.mode === "series_unlock";
+      if (chIds.length) {
+        const { data: paid } = await db
+          .from("payments")
+          .select("chapter_id")
+          .eq("user_id", appUser.id)
+          .eq("status", "settled")
+          .in("chapter_id", chIds);
+        for (const p of paid ?? []) {
+          const cid = (p as { chapter_id: string | null }).chapter_id;
+          if (cid) ownedChapterIds.add(cid);
+        }
+      }
+    }
+  }
 
   const totalReads = chapters.reduce((s, c) => s + c.read_count, 0);
   const prices = chapters.map((c) => Number(c.current_price_usdc));
@@ -259,22 +292,15 @@ export default async function SeriesPage({
                             : `${c.word_count} panels`}
                         </p>
                       </div>
-                      <div
-                        className="hidden w-24 shrink-0 sm:block"
-                        title={`${Math.round(Number(c.completion_rate) * 100)}% completion`}
-                      >
-                        <div className="h-1 w-full bg-[var(--color-surface-2)]">
-                          <div
-                            className={`h-full ${Number(c.completion_rate) >= 0.75 ? "bg-[var(--color-accent-2)]" : "bg-[var(--color-gold)]"}`}
-                            style={{
-                              width: `${Math.min(100, Number(c.completion_rate) * 100)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <span className="tabular w-12 shrink-0 text-right text-sm font-semibold text-[var(--color-gold)]">
-                        ${Number(c.current_price_usdc).toFixed(2)}
-                      </span>
+                      {unlockedSeries || ownedChapterIds.has(c.id) ? (
+                        <span className="tabular inline-flex shrink-0 items-center gap-1 text-sm font-medium text-[var(--color-accent-2)]" title="You've read this chapter">
+                          <Check size={14} /> Read
+                        </span>
+                      ) : (
+                        <span className="tabular shrink-0 text-right text-sm font-semibold text-[var(--color-gold)]">
+                          ${Number(c.current_price_usdc).toFixed(2)}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 ))}
