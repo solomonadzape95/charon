@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { addAgentMessage, getAgentConfig, getUserById, upsertAgentConfig } from "@/lib/db";
+import { addAgentMessage, getAgentConfig, getAgentSpendStats, getUserById, upsertAgentConfig } from "@/lib/db";
 import { buildTasteProfile } from "@/lib/agents/reader-agent";
 
 export const runtime = "nodejs";
@@ -27,7 +27,10 @@ export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get("userId");
   if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
   const config = await getAgentConfig(userId);
-  return NextResponse.json({ config: shape(config) });
+  const base = shape(config);
+  if (!base) return NextResponse.json({ config: null });
+  const stats = await getAgentSpendStats(userId);
+  return NextResponse.json({ config: { ...base, stats } });
 }
 
 /** Set up (or reconfigure) the agent. */

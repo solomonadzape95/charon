@@ -440,6 +440,43 @@ export async function listAgentMessages(userId: string, limit = 60): Promise<Age
   return (data as AgentMessage[]) ?? [];
 }
 
+/** All-time spending overview for a reader's agent. */
+export async function getAgentSpendStats(
+  userId: string,
+): Promise<{ totalFunded: number; totalReturned: number; totalSpent: number; chaptersRead: number }> {
+  const db = supabaseService();
+  const round = (n: number) => Math.round(n * 100) / 100;
+
+  const { data: ledger } = await db
+    .from("ledger")
+    .select("kind, amount_usd")
+    .eq("user_id", userId)
+    .in("kind", ["agent_fund", "agent_return"]);
+  let totalFunded = 0;
+  let totalReturned = 0;
+  for (const l of ledger ?? []) {
+    const row = l as { kind: string; amount_usd: number };
+    if (row.kind === "agent_fund") totalFunded += Math.abs(Number(row.amount_usd));
+    else if (row.kind === "agent_return") totalReturned += Number(row.amount_usd);
+  }
+
+  const { data: pays } = await db
+    .from("payments")
+    .select("amount_usdc, chapter_id")
+    .eq("user_id", userId)
+    .eq("caller_type", "agent")
+    .eq("status", "settled");
+  let totalSpent = 0;
+  const chapters = new Set<string>();
+  for (const p of pays ?? []) {
+    const row = p as { amount_usdc: number; chapter_id: string | null };
+    totalSpent += Number(row.amount_usdc);
+    if (row.chapter_id) chapters.add(row.chapter_id);
+  }
+
+  return { totalFunded: round(totalFunded), totalReturned: round(totalReturned), totalSpent: round(totalSpent), chaptersRead: chapters.size };
+}
+
 /** User ids of every active (non-paused) reader agent — for the scheduled fleet run. */
 export async function listActiveAgentUserIds(limit = 200): Promise<string[]> {
   const { data } = await supabaseService()

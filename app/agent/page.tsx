@@ -19,6 +19,7 @@ interface AgentConfig {
   walletAddress: string | null;
   walletBalance: number;
   weekFunded: number;
+  stats?: { totalFunded: number; totalReturned: number; totalSpent: number; chaptersRead: number };
 }
 interface FeedMsg {
   id: string;
@@ -261,6 +262,16 @@ function AgentConsole({ userId, config, onConfig }: { userId: string; config: Ag
         </div>
       </div>
 
+      {/* All-time spending overview */}
+      {config.stats && (
+        <div className="grid grid-cols-2 gap-px border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
+          <AgentStat label="Funded all-time" value={`$${config.stats.totalFunded.toFixed(2)}`} />
+          <AgentStat label="Spent all-time" value={`$${config.stats.totalSpent.toFixed(2)}`} accent />
+          <AgentStat label="Chapters read" value={`${config.stats.chaptersRead}`} />
+          <AgentStat label="In wallet now" value={`$${config.walletBalance.toFixed(2)}`} />
+        </div>
+      )}
+
       {/* Feed */}
       <div ref={scroller} className="max-h-[55vh] space-y-3 overflow-y-auto scrollbar-thin border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
         {feed.length === 0 ? (
@@ -314,6 +325,15 @@ function FeedItem({ m }: { m: FeedMsg }) {
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function AgentStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="bg-[var(--color-surface)] px-4 py-4">
+      <p className="text-utility text-[var(--color-muted)]">{label}</p>
+      <p className={`tabular mt-1 text-xl font-semibold ${accent ? "text-[var(--color-gold)]" : ""}`}>{value}</p>
     </div>
   );
 }
