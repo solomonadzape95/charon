@@ -46,16 +46,24 @@ const MODE_LABEL: Record<string, string> = {
   series_unlock: "Unlocked",
 };
 
-type SortKey = "trending" | "readers" | "new";
+type SortKey = "ranked" | "trending" | "readers" | "new";
 const SORTS: { id: SortKey; label: string }[] = [
+  { id: "ranked", label: "Top ranked" },
   { id: "trending", label: "Trending" },
   { id: "readers", label: "Most readers" },
   { id: "new", label: "Newest" },
 ];
 
+const GENRES_SHOWN = 10; // tags shown before the "more" toggle
+
 /** Genres are a comma-separated tag list — split them everywhere. */
 function genresOf(s: Series): string[] {
   return (s.genre ?? "").split(",").map((g) => g.trim()).filter(Boolean);
+}
+
+/** Overall rank score — quality (completion) + reach (readers) + momentum. */
+function rankScore(s: Series): number {
+  return Number(s.follower_count) + Number(s.momentum_score) * 0.5 + Number(s.avg_completion_rate) * 100;
 }
 
 function Discovery() {
@@ -63,9 +71,10 @@ function Discovery() {
   const urlQ = sp.get("q") ?? "";
   const [userId, setUserId] = useState<string | null>(null);
   const [genre, setGenre] = useState<string>("all");
-  const [sort, setSort] = useState<SortKey>("trending");
+  const [sort, setSort] = useState<SortKey>("ranked");
   const [query, setQuery] = useState(urlQ);
   const [page, setPage] = useState(1);
+  const [showAllGenres, setShowAllGenres] = useState(false);
 
   // Cached: re-visiting Discover paints instantly, then revalidates.
   const { data: seriesData, loading } = useCachedFetch<{ series: Series[] }>("/api/series?limit=200", "series:all");
@@ -104,7 +113,8 @@ function Discovery() {
     let list = genre === "all" ? series : series.filter((s) => genresOf(s).some((g) => g.toLowerCase() === genre.toLowerCase()));
     if (q) list = list.filter((s) => (s.title + " " + (s.description ?? "") + " " + (s.genre ?? "")).toLowerCase().includes(q));
     list = [...list];
-    if (sort === "trending") list.sort((a, b) => b.momentum_score - a.momentum_score);
+    if (sort === "ranked") list.sort((a, b) => rankScore(b) - rankScore(a));
+    else if (sort === "trending") list.sort((a, b) => b.momentum_score - a.momentum_score);
     else if (sort === "readers") list.sort((a, b) => b.follower_count - a.follower_count);
     else list.sort((a, b) => +new Date(b.created_at ?? 0) - +new Date(a.created_at ?? 0));
     return list;
@@ -145,6 +155,20 @@ function Discovery() {
           </section>
         ) : (
           <>
+            {userId && !lib && (
+              <section className="space-y-6">
+                <SectionHead title="Continue reading" />
+                <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="space-y-3">
+                      <div className="aspect-[2/3] w-full animate-pulse bg-[var(--color-surface)]" />
+                      <div className="h-3 w-1/2 animate-pulse bg-[var(--color-surface)]" />
+                      <div className="h-4 w-3/4 animate-pulse bg-[var(--color-surface)]" />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
             {continueReading.length > 0 && (
               <section className="space-y-6">
                 <SectionHead title="Continue reading" />
@@ -219,11 +243,19 @@ function Discovery() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap gap-1.5">
                     <FilterChip active={genre === "all"} onClick={() => setGenre("all")}>All</FilterChip>
-                    {genres.map((g) => (
+                    {(showAllGenres ? genres : genres.slice(0, GENRES_SHOWN)).map((g) => (
                       <FilterChip key={g} active={genre.toLowerCase() === g.toLowerCase()} onClick={() => setGenre(g)}>
                         {g}
                       </FilterChip>
                     ))}
+                    {genres.length > GENRES_SHOWN && (
+                      <button
+                        onClick={() => setShowAllGenres((v) => !v)}
+                        className="whitespace-nowrap rounded-full border border-dashed border-[var(--color-border)] px-3 py-1 text-utility text-[var(--color-muted)] transition-colors hover:border-[var(--color-gold)] hover:text-[var(--color-ink)]"
+                      >
+                        {showAllGenres ? "Less" : `+${genres.length - GENRES_SHOWN} more`}
+                      </button>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-utility text-[var(--color-muted)]">Sort</span>
@@ -242,7 +274,7 @@ function Discovery() {
                   <p className="text-sm text-[var(--color-muted)]">Nothing in this genre yet.</p>
                 ) : (
                   <>
-                    <BrowseList items={pageItems} />
+                    <BrowseList items={pageItems} rankFrom={sort === "ranked" ? (safePage - 1) * PAGE_SIZE : null} />
                     <Pagination page={safePage} totalPages={totalPages} onPage={setPage} total={browse.length} />
                   </>
                 )}
@@ -327,13 +359,18 @@ function Poster({
 }
 
 /* ── Browse list (catalog row) — real stats only ── */
-function BrowseList({ items }: { items: Series[] }) {
+function BrowseList({ items, rankFrom = null }: { items: Series[]; rankFrom?: number | null }) {
   return (
     <div className="grid gap-px border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2">
-      {items.map((s) => {
+      {items.map((s, i) => {
         const tags = genresOf(s);
         return (
           <Link key={s.id} href={`/series/${s.slug ?? s.id}`} className="group flex gap-4 bg-[var(--color-bg)] p-4 transition-colors hover:bg-[var(--color-surface)]">
+            {rankFrom != null && (
+              <span className="font-display w-7 shrink-0 self-center text-center text-xl font-bold text-[var(--color-muted)]">
+                {rankFrom + i + 1}
+              </span>
+            )}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={coverFor(s.id, s.cover_image)}

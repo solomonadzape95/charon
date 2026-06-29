@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { PenLine, LogOut, Search, Menu, X, BookOpen, PenTool } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CommandPalette } from "@/components/CommandPalette";
 import { getUserId, getUsername, getCreatorId, resolveCreatorId, signOutEverywhere } from "@/lib/account";
 import { getMode, setMode, onModeChange, isStudioPath, type AppMode } from "@/lib/mode";
 import { useScrollHide } from "@/lib/use-scroll-hide";
@@ -39,7 +40,7 @@ export function AccountNav() {
   const [ready, setReady] = useState(false);
   const [q, setQ] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
     setUsername(getUsername());
@@ -50,23 +51,17 @@ export function AccountNav() {
     return onModeChange(setModeState);
   }, [pathname]);
 
-  // ⌘K / Ctrl+K → jump to search. Focuses the header search when present,
-  // otherwise (e.g. in studio) hops over to Discover.
+  // ⌘K / Ctrl+K → open the command palette.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        if (searchRef.current) {
-          searchRef.current.focus();
-          searchRef.current.select();
-        } else {
-          router.push("/read");
-        }
+        setPaletteOpen((o) => !o);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router]);
+  }, []);
 
   // The studio is shown when the path is a studio path, or when the account has
   // chosen studio mode and is on a neutral page (e.g. profile).
@@ -110,23 +105,17 @@ export function AccountNav() {
           <span className="font-display hidden text-2xl font-semibold tracking-tight text-coin sm:inline">Charon</span>
         </Link>
 
-        {/* Search — reader surface only */}
-        {!studioView && (
-          <form onSubmit={search} className="relative hidden max-w-xs flex-1 sm:block">
-            <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]" strokeWidth={1.75} />
-            <input
-              ref={searchRef}
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search series…"
-              aria-label="Search series"
-              className="w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-10 pr-12 text-sm text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-gold)]"
-            />
-            <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 text-[0.62rem] font-medium text-[var(--color-muted)] md:block">
-              ⌘K
-            </kbd>
-          </form>
-        )}
+        {/* Search — opens the command palette */}
+        <button
+          onClick={() => setPaletteOpen(true)}
+          className="relative hidden max-w-xs flex-1 items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-10 pr-12 text-left text-sm text-[var(--color-muted)] transition-colors hover:border-[var(--color-gold)] sm:flex"
+        >
+          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]" strokeWidth={1.75} />
+          Search…
+          <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 text-[0.62rem] font-medium md:block">
+            ⌘K
+          </kbd>
+        </button>
 
         <div className="ml-auto flex shrink-0 items-center gap-2.5">
           {ready && signedIn ? (
@@ -231,6 +220,8 @@ export function AccountNav() {
           })}
         </nav>
       </div>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </header>
   );
 }
