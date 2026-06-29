@@ -71,6 +71,10 @@ export interface SettleSessionArgs {
   sessionId?: string | null;
   amountUsd: number;
   debitKind?: "session_debit" | "unlock_debit";
+  /** Platform fee in basis points (default 500 = 5%). Agent reads use 700 = 7%. */
+  feeBps?: number;
+  /** Who initiated this payment — a human reader or their autonomous agent. */
+  callerType?: "human" | "agent";
 }
 
 export interface SettleResult {
@@ -96,7 +100,7 @@ export interface SettleResult {
  */
 export async function settleSession(args: SettleSessionArgs): Promise<SettleResult> {
   const { userId, creator, chapterId, sessionId, amountUsd } = args;
-  const { grossUsdc, feeUsdc, netUsdc } = splitFee(amountUsd);
+  const { grossUsdc, feeUsdc, netUsdc } = splitFee(amountUsd, args.feeBps);
   const withdrawableAt = new Date(Date.now() + ESCROW_HOLD_MS).toISOString();
 
   const payment = await recordPayment({
@@ -109,6 +113,7 @@ export async function settleSession(args: SettleSessionArgs): Promise<SettleResu
     netUsdc,
     withdrawableAt,
     status: "pending",
+    callerType: args.callerType ?? "human",
   });
 
   // 1. Debit the reader's ledger by the gross (throws on insufficient balance).
@@ -145,10 +150,15 @@ export async function unlockSeries(args: {
   userId: string;
   seriesId: string;
   creator: Creator;
+  /** The creator-set Series Pass price; falls back to the computed bundle price. */
+  passPrice?: number | null;
+  feeBps?: number;
+  callerType?: "human" | "agent";
 }): Promise<{ ok: boolean; amount: number; reason?: string }> {
   const chapters = await listChapters(args.seriesId);
   if (!chapters.length) return { ok: false, amount: 0, reason: "no chapters to unlock" };
-  const amount = bundlePrice(chapters);
+  // Honour the creator's configured Series Pass price; otherwise the bundle price.
+  const amount = args.passPrice && args.passPrice > 0 ? Math.round(args.passPrice * 100) / 100 : bundlePrice(chapters);
   const refChapterId = chapters[0].id;
 
   const result = await settleSession({
@@ -157,6 +167,8 @@ export async function unlockSeries(args: {
     chapterId: refChapterId,
     amountUsd: amount,
     debitKind: "unlock_debit",
+    feeBps: args.feeBps,
+    callerType: args.callerType,
   });
   if (result.status === "failed") return { ok: false, amount, reason: result.reason };
   await setFollowMode(args.userId, args.seriesId, "series_unlock");

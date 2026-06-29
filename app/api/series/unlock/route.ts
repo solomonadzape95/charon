@@ -25,7 +25,12 @@ export async function POST(req: NextRequest) {
   const creator = await getCreatorById(series.creator_id);
   if (!creator) return NextResponse.json({ error: "creator not found" }, { status: 404 });
 
-  const result = await unlockSeries({ userId, seriesId, creator });
+  const result = await unlockSeries({
+    userId,
+    seriesId,
+    creator,
+    passPrice: series.series_pass_price_usdc != null ? Number(series.series_pass_price_usdc) : null,
+  });
   if (!result.ok) return NextResponse.json({ error: result.reason ?? "unlock failed" }, { status: 400 });
   return NextResponse.json({ unlocked: true, amount: result.amount });
 }

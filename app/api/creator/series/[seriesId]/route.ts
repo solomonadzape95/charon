@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSeriesById, listChapters } from "@/lib/db";
 import { supabaseService } from "@/lib/supabase";
+import { suggestedSeriesPass, suggestedPreRelease } from "@/lib/pricing";
+import { isHtmlContent } from "@/lib/chapter-html";
 
 export const runtime = "nodejs";
 
@@ -47,11 +49,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ser
       status: series.status,
       cover_image: series.cover_image,
       follower_count: series.follower_count,
+      passPrice: series.series_pass_price_usdc != null ? Number(series.series_pass_price_usdc) : null,
+      preReleasePrice: series.pre_release_price_usdc != null ? Number(series.pre_release_price_usdc) : null,
     },
     chapters: chapters.map((c) => {
       const cur = Number(c.current_price_usdc);
       const base = Number(c.base_price_usdc);
       const moved = cur > base + 0.001 ? "up" : cur < base - 0.001 ? "down" : null;
+      const isText = c.content_type === "text";
       return {
         id: c.id,
         n: c.chapter_number,
@@ -65,8 +70,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ser
         completion: Number(c.completion_rate),
         reread: Number(c.reread_rate),
         earned: earnedByChapter.get(c.id) ?? 0,
+        contentType: c.content_type,
+        // HTML for the cross-post modal (text chapters only).
+        html: isText && isHtmlContent(c.content ?? "") ? c.content : isText ? `<p>${(c.content ?? "").replace(/</g, "&lt;")}</p>` : "",
       };
     }),
+    suggestedPassPrice: suggestedSeriesPass(chapters),
+    suggestedPreReleasePrice: suggestedPreRelease(chapters),
     preReleaseSubscribers: preRelease ?? 0,
     passBuyers: passBuyers ?? 0,
   });

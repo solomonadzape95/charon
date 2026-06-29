@@ -9,6 +9,7 @@ import {
   getSessionById,
   getSeriesById,
   getUserById,
+  hasPaidForChapter,
   priorReadsOfChapter,
   updateChapter,
 } from "@/lib/db";
@@ -66,10 +67,55 @@ export async function POST(req: NextRequest) {
   const creator = await getCreatorById(series.creator_id);
   if (!creator) return NextResponse.json({ error: "creator missing" }, { status: 404 });
 
+  // Owner protection — a creator reading their own work is NEVER charged. The
+  // reader UI already skips the session for owners; this is the authoritative
+  // backstop so no settlement can ever fire against your own series.
+  if (isSeriesOwner(user.email, creator.email)) {
+    await finalizeSession(session.id, {
+      ended_at: new Date().toISOString(),
+      completion_rate: clamp01(Number(body.completionRate)),
+      scroll_back_count: Math.max(0, Math.round(Number(body.scrollBackCount) || 0)),
+      time_spent_seconds: Math.max(0, Number(body.timeSpentSeconds) || 0),
+      amount_settled_usdc: 0,
+      agent_reasoning: "Your own work — always free to read.",
+    });
+    return NextResponse.json({
+      settled: false,
+      status: "owner",
+      amount: 0,
+      reasoning: "Your own work — always free to read.",
+      seriesTitle: series.title,
+      chapterTitle: chapter.title ?? `Chapter ${chapter.chapter_number}`,
+      balance: Number(user.balance_usd),
+    });
+  }
+
   const completionRate = clamp01(Number(body.completionRate));
   const scrollBackCount = Math.max(0, Math.round(Number(body.scrollBackCount) || 0));
   const timeSpentSeconds = Math.max(0, Number(body.timeSpentSeconds) || 0);
   const readerComment = (body.readerComment ?? "").toString().slice(0, 500) || null;
+
+  // Pay once per chapter, forever — if this reader already settled this chapter,
+  // re-reads are always free (charon-payment-architecture.md, Part 2).
+  if (await hasPaidForChapter(session.user_id, session.chapter_id)) {
+    await finalizeSession(session.id, {
+      ended_at: new Date().toISOString(),
+      completion_rate: clamp01(Number(body.completionRate)),
+      scroll_back_count: Math.max(0, Math.round(Number(body.scrollBackCount) || 0)),
+      time_spent_seconds: Math.max(0, Number(body.timeSpentSeconds) || 0),
+      amount_settled_usdc: 0,
+      agent_reasoning: "Free re-read — you already own this chapter.",
+    });
+    return NextResponse.json({
+      settled: false,
+      status: "reread",
+      amount: 0,
+      reasoning: "Free re-read — you already own this chapter.",
+      seriesTitle: series.title,
+      chapterTitle: chapter.title ?? `Chapter ${chapter.chapter_number}`,
+      balance: Number(user.balance_usd),
+    });
+  }
 
   const loyalty = await getOrCreateLoyalty(session.user_id, series.id);
   const priorReads = await priorReadsOfChapter(session.user_id, session.chapter_id);
@@ -179,6 +225,12 @@ export async function POST(req: NextRequest) {
 function clamp01(n: number): number {
   if (!Number.isFinite(n)) return 0;
   return Math.min(1, Math.max(0, n));
+}
+
+/** A reader owns a series when their account email matches the creator's email. */
+function isSeriesOwner(userEmail: string | null, creatorEmail: string | null): boolean {
+  if (!userEmail || !creatorEmail) return false;
+  return userEmail.trim().toLowerCase() === creatorEmail.trim().toLowerCase();
 }
 
 async function updateChapterAggregates(

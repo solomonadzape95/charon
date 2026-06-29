@@ -29,7 +29,8 @@ const GENRE_BENCHMARKS: Record<string, GenreBenchmark> = {
 };
 
 export function genreBenchmark(genre?: string | null): GenreBenchmark {
-  const key = (genre ?? "").toLowerCase().replace(/[^a-z]/g, "");
+  // Genres are a comma-separated tag list; benchmark off the first (primary) one.
+  const key = (genre ?? "").split(",")[0].toLowerCase().replace(/[^a-z]/g, "");
   return GENRE_BENCHMARKS[key] ?? GENRE_BENCHMARKS.default;
 }
 
@@ -135,6 +136,31 @@ export function applyReaderModifiers(currentPrice: number, m: ReaderModifiers, f
 export function bundlePrice(chapters: Pick<Chapter, "current_price_usdc">[]): number {
   const total = chapters.reduce((s, c) => s + Number(c.current_price_usdc), 0);
   return Math.max(ABS_FLOOR, cents(total * 0.7));
+}
+
+/** The Series Pass discount off the full expected per-chapter cost (doc Part 4). */
+export const SERIES_PASS_RATE = 0.85;
+/** Pre-release immediacy premium over the series average base price (doc Part 5). */
+export const PRE_RELEASE_PREMIUM = 0.2;
+
+/**
+ * Suggested Series Pass price — 85% of the full cost of reading every current
+ * chapter at its live price. One payment, permanent access to all current and
+ * future chapters. (charon-payment-architecture.md, Part 4.)
+ */
+export function suggestedSeriesPass(chapters: Pick<Chapter, "current_price_usdc">[]): number {
+  const total = chapters.reduce((s, c) => s + Number(c.current_price_usdc), 0);
+  return Math.max(ABS_FLOOR, cents(total * SERIES_PASS_RATE));
+}
+
+/**
+ * Suggested pre-release price — one price per series, ~20% above the series'
+ * average base chapter price, reflecting the immediacy premium. (Part 5.)
+ */
+export function suggestedPreRelease(chapters: Pick<Chapter, "base_price_usdc">[]): number {
+  if (!chapters.length) return 0.06;
+  const avg = chapters.reduce((s, c) => s + Number(c.base_price_usdc), 0) / chapters.length;
+  return Math.max(ABS_FLOOR, cents(avg * (1 + PRE_RELEASE_PREMIUM)));
 }
 
 export function ageDays(publicReleaseAt: string, now: number): number {

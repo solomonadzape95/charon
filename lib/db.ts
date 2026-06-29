@@ -5,8 +5,12 @@
 import { randomUUID } from "node:crypto";
 import {
   supabaseService,
+  type AgentConfig,
+  type AgentMessage,
+  type Announcement,
   type Chapter,
   type Creator,
+  type TasteProfile,
   type Follow,
   type FollowMode,
   type Loyalty,
@@ -29,6 +33,18 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   return (data as User) ?? null;
 }
 
+/** Search readers by email (for gifting). Returns id + email only. */
+export async function searchUsers(q: string, limit = 8): Promise<{ id: string; email: string | null }[]> {
+  const term = q.trim();
+  if (term.length < 2) return [];
+  const { data } = await supabaseService()
+    .from("users")
+    .select("id, email")
+    .ilike("email", `%${term}%`)
+    .limit(limit);
+  return (data as { id: string; email: string | null }[]) ?? [];
+}
+
 export async function createUser(email: string): Promise<User> {
   const { data, error } = await supabaseService()
     .from("users")
@@ -43,7 +59,7 @@ export async function createUser(email: string): Promise<User> {
 export async function adjustUserBalance(
   userId: string,
   deltaUsd: number,
-  kind: "deposit" | "welcome" | "session_debit" | "unlock_debit" | "refund",
+  kind: "deposit" | "welcome" | "gift" | "tip" | "session_debit" | "unlock_debit" | "refund",
   refId?: string | null,
 ): Promise<number> {
   const db = supabaseService();
@@ -307,6 +323,145 @@ export async function updateSeries(id: string, patch: Partial<Series>): Promise<
   await supabaseService().from("series").update(patch).eq("id", id);
 }
 
+// ── announcements ──────────────────────────────────────────
+export async function createAnnouncement(input: {
+  creatorId: string;
+  seriesId?: string | null;
+  title?: string | null;
+  body: string;
+}): Promise<Announcement> {
+  const { data, error } = await supabaseService()
+    .from("announcements")
+    .insert({
+      creator_id: input.creatorId,
+      series_id: input.seriesId ?? null,
+      title: input.title ?? null,
+      body: input.body,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Announcement;
+}
+
+/** Announcements a reader of this series should see: series-specific + the creator's series-wide ones. */
+export async function listAnnouncementsForSeries(seriesId: string, creatorId: string, limit = 10): Promise<Announcement[]> {
+  const { data } = await supabaseService()
+    .from("announcements")
+    .select("*")
+    .or(`series_id.eq.${seriesId},and(creator_id.eq.${creatorId},series_id.is.null)`)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data as Announcement[]) ?? [];
+}
+
+export async function listAnnouncementsForCreator(creatorId: string, limit = 20): Promise<Announcement[]> {
+  const { data } = await supabaseService()
+    .from("announcements")
+    .select("*")
+    .eq("creator_id", creatorId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data as Announcement[]) ?? [];
+}
+
+export async function deleteAnnouncement(id: string): Promise<void> {
+  await supabaseService().from("announcements").delete().eq("id", id);
+}
+
+// ── reader agent ───────────────────────────────────────────
+export async function getAgentConfig(userId: string): Promise<AgentConfig | null> {
+  const { data } = await supabaseService().from("agent_config").select("*").eq("user_id", userId).maybeSingle();
+  return (data as AgentConfig) ?? null;
+}
+
+export async function upsertAgentConfig(input: {
+  userId: string;
+  tasteProfile?: TasteProfile | null;
+  weeklyLimitUsdc?: number;
+  agentWalletId?: string | null;
+  agentWalletAddress?: string | null;
+}): Promise<AgentConfig> {
+  const patch: Record<string, unknown> = { user_id: input.userId };
+  if (input.tasteProfile !== undefined) patch.taste_profile = input.tasteProfile;
+  if (input.weeklyLimitUsdc !== undefined) patch.weekly_limit_usdc = input.weeklyLimitUsdc;
+  if (input.agentWalletId !== undefined) patch.agent_wallet_id = input.agentWalletId;
+  if (input.agentWalletAddress !== undefined) patch.agent_wallet_address = input.agentWalletAddress;
+  const { data, error } = await supabaseService()
+    .from("agent_config")
+    .upsert(patch, { onConflict: "user_id" })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as AgentConfig;
+}
+
+export async function updateAgentConfig(userId: string, patch: Partial<AgentConfig>): Promise<void> {
+  await supabaseService().from("agent_config").update(patch).eq("user_id", userId);
+}
+
+export async function addAgentMessage(input: {
+  userId: string;
+  sender: "agent" | "reader";
+  kind?: string;
+  content: string;
+  seriesId?: string | null;
+  chapterId?: string | null;
+  amountUsd?: number | null;
+  paymentRef?: string | null;
+}): Promise<AgentMessage> {
+  const { data, error } = await supabaseService()
+    .from("agent_messages")
+    .insert({
+      user_id: input.userId,
+      sender: input.sender,
+      kind: input.kind ?? "message",
+      content: input.content,
+      series_id: input.seriesId ?? null,
+      chapter_id: input.chapterId ?? null,
+      amount_usdc: input.amountUsd ?? null,
+      payment_ref: input.paymentRef ?? null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as AgentMessage;
+}
+
+export async function listAgentMessages(userId: string, limit = 60): Promise<AgentMessage[]> {
+  const { data } = await supabaseService()
+    .from("agent_messages")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+  return (data as AgentMessage[]) ?? [];
+}
+
+/** User ids of every active (non-paused) reader agent — for the scheduled fleet run. */
+export async function listActiveAgentUserIds(limit = 200): Promise<string[]> {
+  const { data } = await supabaseService()
+    .from("agent_config")
+    .select("user_id")
+    .eq("paused", false)
+    .limit(limit);
+  return (data ?? []).map((r) => (r as { user_id: string }).user_id);
+}
+
+/** Chapters in a series this user has NOT yet paid for, in order. */
+export async function unpaidChaptersForUser(userId: string, seriesId: string): Promise<Chapter[]> {
+  const chapters = await listChapters(seriesId);
+  if (!chapters.length) return [];
+  const { data: paid } = await supabaseService()
+    .from("payments")
+    .select("chapter_id")
+    .eq("user_id", userId)
+    .eq("status", "settled")
+    .in("chapter_id", chapters.map((c) => c.id));
+  const paidIds = new Set((paid ?? []).map((p) => (p as { chapter_id: string }).chapter_id));
+  return chapters.filter((c) => !paidIds.has(c.id));
+}
+
 // ── chapters ───────────────────────────────────────────────
 export async function createChapter(input: {
   seriesId: string;
@@ -433,6 +588,7 @@ export async function recordPayment(input: {
   withdrawableAt?: string | null; // escrow clear time
   status?: PaymentStatus;
   arcTxHash?: string | null;
+  callerType?: "human" | "agent";
 }): Promise<Payment> {
   const { data, error } = await supabaseService()
     .from("payments")
@@ -447,6 +603,7 @@ export async function recordPayment(input: {
       withdrawable_at: input.withdrawableAt ?? null,
       status: input.status ?? "pending",
       arc_tx_hash: input.arcTxHash ?? null,
+      caller_type: input.callerType ?? "human",
     })
     .select()
     .single();
@@ -499,6 +656,25 @@ export async function setFollowMode(userId: string, seriesId: string, mode: Foll
   await supabaseService()
     .from("follows")
     .upsert({ user_id: userId, series_id: seriesId, mode }, { onConflict: "user_id,series_id" });
+}
+
+/** Remove a follow (un-add from library). Returns whether a row was deleted. */
+export async function removeFollow(userId: string, seriesId: string): Promise<void> {
+  await supabaseService().from("follows").delete().eq("user_id", userId).eq("series_id", seriesId);
+}
+
+/**
+ * Pay-once rule: has this reader already settled a payment for this chapter?
+ * If so, re-reads are free forever (charon-payment-architecture.md, Part 2).
+ */
+export async function hasPaidForChapter(userId: string, chapterId: string): Promise<boolean> {
+  const { count } = await supabaseService()
+    .from("payments")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("chapter_id", chapterId)
+    .eq("status", "settled");
+  return (count ?? 0) > 0;
 }
 
 export async function listFollowsForUser(userId: string): Promise<Follow[]> {

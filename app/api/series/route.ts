@@ -19,6 +19,8 @@ export async function PATCH(req: NextRequest) {
     genre?: string;
     coverImage?: string;
     status?: SeriesStatus;
+    passPrice?: number | null;
+    preReleasePrice?: number | null;
   } = {};
   try {
     body = await req.json();
@@ -36,9 +38,20 @@ export async function PATCH(req: NextRequest) {
   if (body.genre != null) patch.genre = body.genre;
   if (body.coverImage != null) patch.cover_image = body.coverImage;
   if (body.status && (body.status === "ongoing" || body.status === "completed")) patch.status = body.status;
+  // Series Pass / pre-release prices: a positive number sets the offer; null clears it.
+  if (body.passPrice !== undefined) patch.series_pass_price_usdc = sanitizePrice(body.passPrice);
+  if (body.preReleasePrice !== undefined) patch.pre_release_price_usdc = sanitizePrice(body.preReleasePrice);
   if (Object.keys(patch).length) await updateSeries(id, patch);
 
   return NextResponse.json({ series: { ...series, ...patch } });
+}
+
+/** Clamp a creator-set price to the rail's cents, or null to clear the offer. */
+function sanitizePrice(v: number | null): number | null {
+  if (v == null) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.round(Math.min(999, n) * 100) / 100;
 }
 
 export async function GET(req: NextRequest) {
@@ -57,7 +70,10 @@ export async function GET(req: NextRequest) {
     }
   }
   const withCounts = series.map((s) => ({ ...s, chapter_count: counts[s.id] ?? 0 }));
-  return NextResponse.json({ series: withCounts });
+  return NextResponse.json(
+    { series: withCounts },
+    { headers: { "Cache-Control": "public, max-age=15, stale-while-revalidate=120" } },
+  );
 }
 
 export async function POST(req: NextRequest) {

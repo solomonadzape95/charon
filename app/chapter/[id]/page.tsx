@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getChapterById, getSeriesById, listChapters } from "@/lib/db";
+import { getChapterById, getCreatorById, getSeriesById, listChapters } from "@/lib/db";
 import { ChapterReader } from "@/components/ChapterReader";
 import { GuestGate } from "@/components/GuestGate";
 import { estimatedReadMinutes } from "@/lib/pricing";
@@ -28,6 +28,16 @@ export default async function ChapterPage({ params }: { params: Promise<{ id: st
     data: { user },
   } = await (await supabaseServerAuth()).auth.getUser();
   const guest = !user;
+
+  // Owner detection — if the signed-in account is the creator of this series,
+  // they're previewing their own work: no session is opened and nothing is ever
+  // charged. The settle endpoint enforces the same rule as a backstop.
+  let owner = false;
+  if (user?.email) {
+    const creator = await getCreatorById(series.creator_id);
+    owner =
+      !!creator?.email && creator.email.trim().toLowerCase() === user.email.trim().toLowerCase();
+  }
 
   if (guest && chapter.chapter_number > 1) {
     return (
@@ -61,6 +71,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ id: st
         title: c.title ?? `Chapter ${c.chapter_number}`,
       }))}
       guest={guest}
+      owner={owner}
     />
   );
 }

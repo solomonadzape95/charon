@@ -9,32 +9,13 @@ interface Props {
   seriesId: string;
   status: string;
   firstChapterId: string | null;
-  suggestedPass: number;
-  perChapterAvg: number;
+  /** Creator-set Series Pass price, or null when not offered. */
+  passPrice: number | null;
+  /** Creator-set pre-release price, or null when not offered. */
+  preReleasePrice: number | null;
 }
 
-const MODES = [
-  {
-    id: "standard",
-    icon: Coins,
-    title: "Read as you go",
-    desc: "Pay per session, valued by the agent on how deeply you engage.",
-  },
-  {
-    id: "series_unlock",
-    icon: Ticket,
-    title: "Series Pass",
-    desc: "One price, permanent access — including future chapters.",
-  },
-  {
-    id: "pre_release",
-    icon: Clock,
-    title: "Pre-release",
-    desc: "Auto-pay when new chapters drop, before they're public.",
-  },
-] as const;
-
-export function PaymentModes({ seriesId, status, firstChapterId, suggestedPass, perChapterAvg }: Props) {
+export function PaymentModes({ seriesId, status, firstChapterId, passPrice, preReleasePrice }: Props) {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [mode, setMode] = useState<string | null>(null);
@@ -102,17 +83,23 @@ export function PaymentModes({ seriesId, status, firstChapterId, suggestedPass, 
 
   const unlocked = mode === "series_unlock";
 
+  // Only surface offers the creator actually configured. Standard is always on.
+  const modes: { id: string; icon: typeof Coins; title: string; desc: string; price: string }[] = [
+    { id: "standard", icon: Coins, title: "Read as you go", desc: "Pay per session, valued by the agent on how deeply you engage.", price: "agent-valued" },
+  ];
+  if (passPrice != null) {
+    modes.push({ id: "series_unlock", icon: Ticket, title: "Series Pass", desc: "One price, permanent access — including future chapters.", price: `$${passPrice.toFixed(2)}` });
+  }
+  if (preReleasePrice != null) {
+    modes.push({ id: "pre_release", icon: Clock, title: "Pre-release", desc: "Auto-pay when new chapters drop, before they're public.", price: `$${preReleasePrice.toFixed(2)}/drop` });
+  }
+
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
-        {MODES.map((m) => {
+      <div className={`grid gap-3 ${modes.length === 1 ? "sm:grid-cols-1" : modes.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+        {modes.map((m) => {
           const active = selected === m.id;
-          const price =
-            m.id === "series_unlock"
-              ? `$${suggestedPass.toFixed(2)}`
-              : m.id === "pre_release"
-                ? `~$${perChapterAvg.toFixed(2)}/ch`
-                : "agent-valued";
+          const price = m.price;
           const disabled = m.id === "series_unlock" && unlocked;
           return (
             <button

@@ -62,9 +62,23 @@ create table public.series (
   follower_count int not null default 0,
   avg_completion_rate numeric not null default 0,
   binge_velocity numeric not null default 0,        -- chapters/session observed
-  momentum_score numeric not null default 0         -- Agent 3 series-momentum signal
+  momentum_score numeric not null default 0,        -- Agent 3 series-momentum signal
+  series_pass_price_usdc numeric,                   -- one-time permanent-access price (~85% of expected); NULL = not offered
+  pre_release_price_usdc numeric                    -- single early-access price per series; NULL = not offered
 );
 create index series_creator_idx on public.series(creator_id);
+
+-- ── announcements (creator → readers) ─────────────────────
+create table public.announcements (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  creator_id uuid not null references public.creators(id) on delete cascade,
+  series_id uuid references public.series(id) on delete cascade,  -- NULL = creator-wide
+  title text,
+  body text not null
+);
+create index announcements_creator_idx on public.announcements(creator_id);
+create index announcements_series_idx on public.announcements(series_id);
 
 -- ── chapters ──────────────────────────────────────────────
 create table public.chapters (
@@ -125,6 +139,7 @@ create table public.payments (
   net_usdc numeric,                                  -- creator's net (gross - fee)
   withdrawable_at timestamptz,                       -- escrow clears at created_at + 7d
   arc_tx_hash text,
+  caller_type text not null default 'human',         -- human | agent (autonomous reader agent)
   status text not null default 'pending'             -- pending | settled | failed
 );
 create index payments_creator_idx on public.payments(creator_id);
@@ -205,6 +220,33 @@ create table public.loyalty (
   unique (user_id, series_id)
 );
 create index loyalty_user_idx on public.loyalty(user_id);
+
+-- ── autonomous reader agent ───────────────────────────────
+create table public.agent_config (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  user_id uuid not null unique references public.users(id) on delete cascade,
+  taste_profile jsonb,
+  weekly_limit_usdc numeric not null default 3,
+  weekly_spent_usdc numeric not null default 0,
+  week_start timestamptz not null default now(),
+  agent_wallet_id text,
+  agent_wallet_address text,
+  paused boolean not null default false
+);
+create table public.agent_messages (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  sender text not null,                              -- 'agent' | 'reader'
+  kind text not null default 'message',
+  content text not null,
+  series_id uuid references public.series(id) on delete set null,
+  chapter_id uuid references public.chapters(id) on delete set null,
+  amount_usdc numeric,
+  payment_ref text
+);
+create index agent_messages_user_idx on public.agent_messages(user_id, created_at);
 
 -- ── RLS ────────────────────────────────────────────────────
 do $$

@@ -73,6 +73,19 @@ export interface Series {
   avg_completion_rate: number;
   binge_velocity: number;
   momentum_score: number;
+  /** One-time Series Pass price (permanent access). NULL = not offered. */
+  series_pass_price_usdc: number | null;
+  /** Single per-series early-access price for pre-release subscribers. NULL = not offered. */
+  pre_release_price_usdc: number | null;
+}
+
+export interface Announcement {
+  id: string;
+  created_at: string;
+  creator_id: string;
+  series_id: string | null;
+  title: string | null;
+  body: string;
 }
 
 export type ContentType = "text" | "images";
@@ -118,6 +131,42 @@ export interface Session {
 }
 
 export type PaymentStatus = "pending" | "settled" | "failed";
+export type CallerType = "human" | "agent";
+
+export interface TasteProfile {
+  loved_series: string[];
+  summary: string;
+  genre_affinities: string[];
+  hard_avoids: string[];
+  pacing?: string;
+  emotional_weight?: string;
+}
+
+export interface AgentConfig {
+  id: string;
+  created_at: string;
+  user_id: string;
+  taste_profile: TasteProfile | null;
+  weekly_limit_usdc: number;
+  weekly_spent_usdc: number;
+  week_start: string;
+  agent_wallet_id: string | null;
+  agent_wallet_address: string | null;
+  paused: boolean;
+}
+
+export interface AgentMessage {
+  id: string;
+  created_at: string;
+  user_id: string;
+  sender: "agent" | "reader";
+  kind: string;
+  content: string;
+  series_id: string | null;
+  chapter_id: string | null;
+  amount_usdc: number | null;
+  payment_ref: string | null;
+}
 
 export interface Payment {
   id: string;
@@ -131,6 +180,7 @@ export interface Payment {
   net_usdc: number | null;
   withdrawable_at: string | null;
   arc_tx_hash: string | null;
+  caller_type: CallerType;
   status: PaymentStatus;
 }
 
