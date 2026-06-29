@@ -116,8 +116,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh]" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+    <div className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-[12vh] w-screen h-screen" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 w-full h-full bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="fade-up relative w-full max-w-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl">
         <div className="flex items-center gap-3 border-b border-[var(--color-border)] px-4">
           <Search size={17} className="text-[var(--color-muted)]" strokeWidth={1.75} />
