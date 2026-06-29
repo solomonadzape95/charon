@@ -10,3 +10,6 @@ next-env.d.ts
 .vercel
 asterion-content.sql
 db.sql
+charon-*
+lepton-hackathon-page.txt
+sample-novel.txt

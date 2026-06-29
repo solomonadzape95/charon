@@ -98,5 +98,41 @@ with `/api/cron/reprice?key=$CRON_SECRET`.
 ## Routes
 
 `/` landing · `/read` browse · `/series/[id]` · `/chapter/[id]` reader ·
-`/dashboard` reader wallet · `/creator` upload hub · `/creator/dashboard`
-live earnings · `/stats` public live stats.
+`/dashboard` reader wallet · `/creator/studio` creator studio · `/author/[slug]`
+public creator profile · `/stats` public live stats.
+
+---
+
+## Roadmap
+
+Tracked against the Lepton Agents Hackathon scoring (agentic sophistication ·
+traction · Circle tool usage · innovation). Checked = shipped.
+
+### Shipped
+- [x] Per-session nanopayments — engagement-priced, settled on Arc via `@circle-fin/x402-batching` (Gateway, EIP-3009, batched)
+- [x] Four reading agents — pricing, session-valuation, repricing, budget (Claude via OpenRouter, deterministic fallbacks)
+- [x] Dynamic pricing — demand × quality multipliers, loyalty / binge / discovery discounts, pay-once
+- [x] Series Pass (85%) + pre-release — persisted, creator-set, editable
+- [x] Creator escrow via Circle Programmable Wallets; on-chain settle at withdrawal (USDC + bank offramp)
+- [x] Owner protection — a creator is never charged to read their own work
+- [x] Reader ↔ Studio mode separation (one account, two surfaces)
+- [x] Cross-post (Royal Road / ScribbleHub / Wattpad / WebNovel)
+- [x] Add-to-library, gift transfer (debits giver), chapter tips (100% to creator), author announcements
+- [x] Public creator profiles · cover/genre editing · Discover pagination + real stats · loading skeletons + client cache
+- [x] **Autonomous Reader Agent v1** — taste profile (Claude), weekly budget cap, x402 auto-buy at 7% (caller_type=agent), live chat + activity feed, "Run now" + scheduled fleet cron (`/api/cron/agent`)
+
+### High impact — in progress / next
+- [ ] Agent v2 — fund a **real Circle wallet** per agent (on-chain weekly funding/return) so the agent literally spends its own USDC
+- [ ] **Real seed stats** — back every catalog number with a real DB row (defends the traction score)
+- [ ] **Gift / tips via Circle App Kit `Send`** — real wallet-to-wallet USDC transfers
+- [ ] **Revenue-split contract** — deploy one Arc contract for co-author / editor splits
+
+### Medium
+- [ ] Threaded comments + real (paid-gated) ratings
+- [ ] Profile pictures (avatar upload)
+- [ ] AI reading guide ("Ask Charon") that can hand off to the reader-agent
+- [ ] Per-second streaming reads (RFB 4)
+
+### Manga
+- [ ] Real manga content + dedicated panel reader
+- [ ] Panel-viewport payment valuation (replaces scroll velocity for image chapters)
