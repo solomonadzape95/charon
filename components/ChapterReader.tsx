@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Settings2, X, Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, Bookmark, BookmarkCheck } from "lucide-react";
+import { Settings2, X, Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, Bookmark, BookmarkCheck, Eye } from "lucide-react";
 import { SessionSummary, type SessionResult } from "@/components/SessionSummary";
+import { PaymentDisclaimer } from "@/components/PaymentDisclaimer";
+import { TipJar } from "@/components/TipJar";
 import { saveProgress, getChapterPct, isBookmarked, toggleBookmark } from "@/lib/reading";
 import { isHtmlContent, toReaderHtml } from "@/lib/chapter-html";
 
@@ -22,6 +24,8 @@ interface Props {
   chapterNumber?: number;
   chapters?: { id: string; n: number; title: string }[];
   guest?: boolean;
+  /** The signed-in account is the creator of this series — preview only, never charged. */
+  owner?: boolean;
 }
 
 const LS_KEY = "charon_user_id";
@@ -143,11 +147,12 @@ export function ChapterReader(props: Props) {
     setBookmarked(on);
   }
 
-  // Resolve the reader and open a session.
+  // Resolve the reader and open a session. Owners (the series creator) never
+  // open a paid session — previewing your own work is always free.
   useEffect(() => {
     const id = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
     setUserId(id);
-    if (!id) return;
+    if (!id || props.owner) return;
 
     const bingeDepth = nextBingeDepth();
     let cancelled = false;
@@ -326,6 +331,18 @@ export function ChapterReader(props: Props) {
 
       {/* Reading surface */}
       <div className="mx-auto max-w-3xl px-6 pb-24 pt-10">
+        {props.owner && (
+          <div
+            className="mb-8 flex items-center gap-3 px-4 py-3 text-sm"
+            style={{ border: `1px solid var(--color-gold)`, color: theme.fg, background: "color-mix(in srgb, var(--color-gold) 10%, transparent)" }}
+          >
+            <Eye size={16} className="shrink-0 text-[var(--color-gold)]" />
+            <span>
+              <span className="font-semibold">Author preview.</span> This is your own work — reading it is always free and
+              never opens a paid session.
+            </span>
+          </div>
+        )}
         {props.guest && (
           <div className="mb-8 px-4 py-3 text-sm" style={{ border: `1px solid ${theme.line}`, color: theme.chrome }}>
             Chapter 1 is free.{" "}
@@ -390,6 +407,11 @@ export function ChapterReader(props: Props) {
             />
           )}
 
+          {/* Tip the author — only for real readers, not the author previewing */}
+          {userId && !props.owner && (
+            <TipJar chapterId={props.chapterId} variant="reader" theme={{ fg: theme.fg, chrome: theme.chrome, line: theme.line }} />
+          )}
+
           {/* Navigation — plain text, gold on hover */}
           <div className="flex items-center justify-between gap-4 text-sm font-medium">
             {props.prevChapterId ? (
@@ -423,6 +445,9 @@ export function ChapterReader(props: Props) {
       </div>
 
       {summary && <SessionSummary result={summary} onClose={() => setSummary(null)} />}
+
+      {/* One-time "how you're charged" notice — only for real paid readers. */}
+      <PaymentDisclaimer theme={theme} enabled={!!userId && !props.owner && !props.guest} />
     </div>
   );
 }

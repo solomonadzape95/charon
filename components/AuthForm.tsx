@@ -171,7 +171,7 @@ function GoogleIcon() {
 }
 
 /** Full-screen split auth surface for the standalone /join page. */
-export function AuthScreen() {
+export function AuthScreen({ expired }: { expired?: boolean }) {
   return (
     <div className="grid min-h-screen md:grid-cols-2">
       <div className="relative hidden overflow-hidden border-r border-[var(--color-border)] md:block">
@@ -188,7 +188,14 @@ export function AuthScreen() {
       </div>
 
       <div className="fade-up grid place-items-center overflow-y-auto px-6 py-16 sm:px-12">
-        <AuthForm />
+        <div className="w-full max-w-sm">
+          {expired && (
+            <p className="mb-5 border border-[var(--color-gold)] bg-[color-mix(in_srgb,var(--color-gold)_10%,transparent)] px-4 py-3 text-sm text-[var(--color-ink)]">
+              Your session expired — sign in again to pick up where you left off.
+            </p>
+          )}
+          <AuthForm />
+        </div>
       </div>
     </div>
   );

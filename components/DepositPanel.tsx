@@ -285,7 +285,7 @@ function AmountField({ amount, setAmount }: { amount: string; setAmount: (v: str
       <p className="text-utility mb-2 text-[var(--color-muted)]">Amount</p>
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]">$</span>
-        <input type="number" min="0" step="0.5" value={amount} onChange={(e) => setAmount(e.target.value)} className="charon-input border w-11/12 pl-7" />
+        <input type="number" min="0" step="0.5" value={amount} onChange={(e) => setAmount(e.target.value)} className="charon-input border w-full pl-7" />
       </div>
     </div>
   );

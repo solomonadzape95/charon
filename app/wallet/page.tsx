@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AccountNav } from "@/components/AccountNav";
 import { DepositPanel } from "@/components/DepositPanel";
+import { GiftPanel } from "@/components/GiftPanel";
+import { ListSkeleton, SkeletonBlock } from "@/components/Skeletons";
 
 interface WalletData {
   balance: number;
@@ -14,6 +16,8 @@ interface WalletData {
 
 const KIND_LABEL: Record<string, string> = {
   deposit: "Deposit",
+  gift: "Gift",
+  tip: "Tip",
   session_debit: "Session",
   unlock_debit: "Unlock",
   refund: "Refund",
@@ -40,27 +44,35 @@ export default function WalletPage() {
     <>
       <AccountNav />
       <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
-        <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-          <p className="text-utility text-[var(--color-muted)]">Balance</p>
-          <p className="font-display text-5xl font-bold text-coin">${(w?.balance ?? 0).toFixed(2)}</p>
+        <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-7 sm:p-8">
+          <p className="text-utility text-[var(--color-muted)]">Reading balance</p>
+          {w === null ? (
+            <SkeletonBlock className="mt-1 h-16 w-52" />
+          ) : (
+            <p className="font-display mt-1 text-6xl font-bold text-coin sm:text-7xl">${w.balance.toFixed(2)}</p>
+          )}
         </section>
 
         {userId && <DepositPanel userId={userId} onCredited={() => load(userId)} />}
 
+        {userId && <GiftPanel userId={userId} />}
+
         <div className="grid grid-cols-2 gap-px border border-[var(--color-border)] bg-[var(--color-border)]">
           <div className="bg-[var(--color-bg)] p-5">
             <p className="text-utility text-[var(--color-muted)]">Deposited</p>
-            <p className="tabular mt-1 text-2xl">${(w?.deposited ?? 0).toFixed(2)}</p>
+            {w === null ? <SkeletonBlock className="mt-2 h-6 w-16" /> : <p className="tabular mt-1 text-2xl">${w.deposited.toFixed(2)}</p>}
           </div>
           <div className="bg-[var(--color-bg)] p-5">
             <p className="text-utility text-[var(--color-muted)]">Spent on reading</p>
-            <p className="tabular mt-1 text-2xl">${(w?.spent ?? 0).toFixed(2)}</p>
+            {w === null ? <SkeletonBlock className="mt-2 h-6 w-16" /> : <p className="tabular mt-1 text-2xl">${w.spent.toFixed(2)}</p>}
           </div>
         </div>
 
         <section className="space-y-3">
           <h2 className="font-display text-2xl font-semibold">Transactions</h2>
-          {!w?.ledger.length ? (
+          {w === null ? (
+            <ListSkeleton rows={4} />
+          ) : !w.ledger.length ? (
             <p className="text-[var(--color-muted)]">No transactions yet.</p>
           ) : (
             <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)]">

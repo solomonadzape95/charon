@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BookOpen, Activity, Coins, Check, ArrowRight, ArrowLeft } from "lucide-react";
 import { coverFor } from "@/lib/covers";
 import { DepositPanel } from "@/components/DepositPanel";
+import { Loading } from "@/components/Loading";
 
 interface Series {
   id: string;
@@ -63,7 +64,7 @@ export default function Onboarding() {
       .catch(() => {});
   }, [router, applyWelcomeCredit]);
 
-  if (!userId) return null;
+  if (!userId) return <Loading full />;
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-4.5rem)] max-w-2xl flex-col px-6 py-10">
@@ -109,10 +110,6 @@ export default function Onboarding() {
             />
           </ol>
 
-          <p className="mt-6 text-sm italic leading-relaxed text-[var(--color-muted)]">
-            The ferryman took one coin per crossing. Every chapter is a crossing — the coin is automatic.
-          </p>
-
           <div className="mt-auto flex justify-end pt-10">
             <button onClick={() => setStep(1)} className="btn-coin w-full sm:w-auto">
               Get started <ArrowRight size={16} />
@@ -154,7 +151,7 @@ export default function Onboarding() {
             </button>
             <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-4">
               <span className="text-center text-xs text-[var(--color-muted)] sm:text-right">
-                No deposit needed — you can start with your free credit.
+                No deposit needed, you can start with your free credit.
               </span>
               <button onClick={() => setStep(2)} className="btn-coin">
                 Skip for now <ArrowRight size={16} />

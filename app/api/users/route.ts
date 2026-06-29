@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createUser, getUserByEmail, getUserById } from "@/lib/db";
+import { createUser, getUserByEmail, getUserById, searchUsers } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -25,6 +25,14 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  // Search mode (for gifting): ?q=<email fragment>
+  const q = req.nextUrl.searchParams.get("q");
+  if (q != null) {
+    const users = await searchUsers(q);
+    return NextResponse.json({
+      users: users.map((u) => ({ id: u.id, email: u.email, username: (u.email ?? "reader").split("@")[0] })),
+    });
+  }
   const id = req.nextUrl.searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
   const user = await getUserById(id);

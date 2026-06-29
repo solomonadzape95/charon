@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PenLine } from "lucide-react";
+import { PenLine, PenTool, ArrowRight, Plus, ExternalLink, Check, Clock, RotateCcw, XCircle, BookOpen } from "lucide-react";
 import { AccountNav } from "@/components/AccountNav";
-import { CreatorOverview } from "@/components/CreatorOverview";
 import { resolveCreatorId, getCreatorId } from "@/lib/account";
+import { setMode } from "@/lib/mode";
 
 interface User {
   id: string;
@@ -21,9 +21,16 @@ interface SessionRow {
   amount: number | null;
   reasoning: string | null;
   value_score: number | null;
+  chapterId: string | null;
   chapter: string | null;
   series: string | null;
+  status: "paid" | "free" | "processing" | "failed";
+  tx: string | null;
+  ref: string | null;
+  creatorWallet: string | null;
 }
+
+const ARC_EXPLORER = "https://testnet.arcscan.app";
 
 interface Budget {
   lowBalance: boolean;
@@ -73,6 +80,8 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
+    // The dashboard is the reader surface — make that the active mode.
+    setMode("read");
     const id = localStorage.getItem(LS_KEY);
     if (id) {
       load(id);
@@ -109,14 +118,14 @@ export default function Dashboard() {
       </>
     );
 
-  const settled = sessions.filter((s) => s.amount != null);
-  const chaptersPaid = settled.length;
+  // Unique chapters, not raw sessions — re-reads must not inflate the count.
+  const chaptersRead = new Set(sessions.map((s) => s.chapterId).filter(Boolean)).size;
   const seriesRead = new Set(sessions.map((s) => s.series).filter(Boolean)).size;
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
-  const settledThisMonth = settled
-    .filter((s) => new Date(s.created_at) >= monthStart)
+  const settledThisMonth = sessions
+    .filter((s) => s.amount != null && new Date(s.created_at) >= monthStart)
     .reduce((sum, s) => sum + Number(s.amount), 0);
   const streak = readingStreak(sessions.map((s) => s.created_at));
 
@@ -124,32 +133,23 @@ export default function Dashboard() {
     <>
       <AccountNav />
       <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
-      <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-        <div className="flex items-end justify-between">
+      <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-7 sm:p-8">
+        <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
-            <p className="text-utility text-[var(--color-muted)]">Balance</p>
-            <p className="text-4xl font-bold text-[var(--color-gold)]">
+            <p className="text-utility text-[var(--color-muted)]">Reading balance</p>
+            <p className="font-display mt-1 text-6xl font-bold text-coin sm:text-7xl">
               ${Number(user.balance_usd).toFixed(2)}
             </p>
-            <p className="mt-1 text-xs text-[var(--color-muted)]">{user.email}</p>
+            <p className="mt-2 text-xs text-[var(--color-muted)]">{user.email}</p>
           </div>
-          <div className="flex gap-2">
-            {[1, 3, 5].map((a) => (
-              <button
-                key={a}
-                disabled={busy}
-                onClick={() => deposit(a)}
-                className="rounded-full border border-[var(--color-border)] px-3 py-2 text-sm font-medium transition-colors hover:bg-[var(--color-surface-2)] disabled:opacity-50"
-              >
-                + ${a}
-              </button>
-            ))}
-          </div>
+          <Link href="/wallet" className="btn-coin">
+            <Plus size={15} /> Add funds
+          </Link>
         </div>
       </section>
 
       <section className="grid grid-cols-2 gap-px border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
-        <DashStat label="Chapters read" value={`${chaptersPaid}`} />
+        <DashStat label="Chapters read" value={`${chaptersRead}`} />
         <DashStat label="Series read" value={`${seriesRead}`} />
         <DashStat label="Settled this month" value={`$${settledThisMonth.toFixed(2)}`} accent />
         <DashStat label="Day streak" value={`${streak}`} />
@@ -164,11 +164,7 @@ export default function Dashboard() {
           {budget.lowBalance && (
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm">{budget.topupMessage}</p>
-              <button
-                disabled={busy}
-                onClick={() => deposit(budget.suggestedTopup)}
-                className="rounded-full bg-[var(--color-gold)] px-4 py-2 text-sm font-semibold text-black disabled:opacity-50"
-              >
+              <button disabled={busy} onClick={() => deposit(budget.suggestedTopup)} className="btn-coin disabled:opacity-50">
                 Top up ${budget.suggestedTopup.toFixed(2)}
               </button>
             </div>
@@ -176,10 +172,7 @@ export default function Dashboard() {
           {budget.modeSwitches.map((m) => (
             <div key={m.seriesId} className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-border)] pt-3">
               <p className="text-sm text-[var(--color-muted)]">{m.reasoning}</p>
-              <button
-                onClick={() => enablePreRelease(m.seriesId)}
-                className="rounded-full border border-[var(--color-gold)] px-3 py-1.5 text-sm font-medium text-[var(--color-gold)]"
-              >
+              <button onClick={() => enablePreRelease(m.seriesId)} className="btn-outline">
                 Enable pre-release
               </button>
             </div>
@@ -189,42 +182,43 @@ export default function Dashboard() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Recent sessions</h2>
-          <Link href="/read" className="text-sm text-[var(--color-gold)]">
-            Browse stories →
+          <h2 className="font-display text-2xl font-semibold">Recent sessions</h2>
+          <Link href="/read" className="btn-outline !py-2 !text-[0.72rem]">
+            <BookOpen size={13} /> Browse stories
           </Link>
         </div>
         {sessions.length === 0 ? (
-          <p className="text-sm text-[var(--color-muted)]">
-            No sessions yet. <Link href="/read" className="text-[var(--color-gold)]">Start reading →</Link>
-          </p>
+          <div className="border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
+            <p className="text-sm text-[var(--color-muted)]">No sessions yet — your reading history shows up here.</p>
+            <Link href="/read" className="btn-coin mt-4">Start reading</Link>
+          </div>
         ) : (
           <ul className="space-y-2">
             {sessions.map((s) => (
-              <li
-                key={s.id}
-                className="border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    {s.series ? `${s.series} · ` : ""}
-                    {s.chapter ?? "Chapter"}
-                  </span>
-                  <span className="text-sm font-semibold text-[var(--color-gold)]">
-                    {s.amount != null ? `$${Number(s.amount).toFixed(2)}` : "—"}
-                  </span>
-                </div>
-                {s.reasoning && (
-                  <p className="mt-1 text-xs text-[var(--color-muted)]">{s.reasoning}</p>
-                )}
-              </li>
+              <SessionItem key={s.id} s={s} />
             ))}
           </ul>
         )}
       </section>
 
       {creatorId ? (
-        <CreatorOverview creatorId={creatorId} />
+        <section className="flex flex-col items-start gap-4 border border-[color-mix(in_srgb,var(--color-gold)_30%,var(--color-border))] bg-[var(--color-surface)] p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-gold)_14%,transparent)] text-[var(--color-gold)]">
+              <PenTool size={19} strokeWidth={1.6} />
+            </span>
+            <div>
+              <h2 className="font-display text-xl font-semibold">Your creator studio</h2>
+              <p className="mt-1 max-w-xl text-sm text-[var(--color-muted)]">
+                Earnings, audience and series live in a separate space — switch over to manage your work without ever
+                touching your reading balance.
+              </p>
+            </div>
+          </div>
+          <Link href="/creator/studio" className="btn-coin shrink-0">
+            Open studio <ArrowRight size={15} />
+          </Link>
+        </section>
       ) : (
         <section className="flex flex-col items-start gap-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
           <div className="flex items-center gap-2 text-[var(--color-gold)]">
@@ -242,6 +236,68 @@ export default function Dashboard() {
       )}
       </div>
     </>
+  );
+}
+
+/** One reading session — payment status, amount, and a link to verify on Arc. */
+function SessionItem({ s }: { s: SessionRow }) {
+  const free = s.status === "free";
+  const paid = s.status === "paid";
+  const processing = s.status === "processing";
+  const failed = s.status === "failed";
+
+  return (
+    <li className="border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span className="min-w-0 truncate text-sm font-medium">
+          {s.series ? `${s.series} · ` : ""}
+          {s.chapter ?? "Chapter"}
+        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          {paid && <span className="tabular text-sm font-semibold text-[var(--color-gold)]">${Number(s.amount ?? 0).toFixed(2)}</span>}
+          {free && (
+            <span className="text-utility inline-flex items-center gap-1 text-[var(--color-accent-2)]">
+              <RotateCcw size={12} /> Free
+            </span>
+          )}
+          {processing && (
+            <span className="text-utility inline-flex items-center gap-1 text-[var(--color-gold)]">
+              <Clock size={12} className="pulse-dot" /> Processing
+            </span>
+          )}
+          {failed && (
+            <span className="text-utility inline-flex items-center gap-1 text-red-400">
+              <XCircle size={12} /> Failed
+            </span>
+          )}
+        </div>
+      </div>
+      {s.reasoning && <p className="mt-1 text-xs text-[var(--color-muted)]">{s.reasoning}</p>}
+
+      {/* Verification — link to the on-chain tx when present, otherwise to the
+          creator's wallet on Arc (where the batched Gateway settlement lands). */}
+      {paid && (() => {
+        const href = s.tx ? `${ARC_EXPLORER}/tx/${s.tx}` : s.creatorWallet ? `${ARC_EXPLORER}/address/${s.creatorWallet}` : null;
+        return (
+          <div className="mt-2 flex items-center gap-2 border-t border-[var(--color-border)] pt-2">
+            <Check size={12} className="text-[var(--color-accent-2)]" />
+            {href ? (
+              <a
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                title={s.tx ? "On-chain transaction on Arc" : "Settled off-chain via Circle Gateway, batched to the creator's wallet on Arc"}
+                className="text-utility inline-flex items-center gap-1 text-[var(--color-muted)] transition-colors hover:text-[var(--color-gold)]"
+              >
+                {s.tx ? "Verify on Arc" : "Gateway settlement"} · {(s.tx ?? s.ref ?? "").slice(0, 8)} <ExternalLink size={11} />
+              </a>
+            ) : (
+              <span className="text-utility text-[var(--color-muted)]">Settled · ref {s.ref ? s.ref.slice(0, 8) : "—"}</span>
+            )}
+          </div>
+        );
+      })()}
+    </li>
   );
 }
 
