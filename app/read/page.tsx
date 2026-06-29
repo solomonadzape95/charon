@@ -44,6 +44,7 @@ const MODE_LABEL: Record<string, string> = {
   standard: "In library",
   pre_release: "Pre-release",
   series_unlock: "Unlocked",
+  reading: "Reading",
 };
 
 type SortKey = "ranked" | "trending" | "readers" | "new";
@@ -92,7 +93,7 @@ function Discovery() {
     if (!lib) return [];
     const modeBySeries = new Map(lib.follows.map((f) => [f.id, f.mode]));
     return lib.history
-      .map((h) => ({ ...h, meta: byId.get(h.id), mode: modeBySeries.get(h.id) ?? "standard" }))
+      .map((h) => ({ ...h, meta: byId.get(h.id), mode: modeBySeries.get(h.id) ?? "reading" }))
       .sort((a, b) => +new Date(b.lastReadAt) - +new Date(a.lastReadAt));
   }, [lib, byId]);
 

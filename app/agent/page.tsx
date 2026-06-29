@@ -60,7 +60,7 @@ export default function AgentPage() {
   return (
     <>
       <AccountNav />
-      <div className="mx-auto max-w-3xl px-6 py-8">
+      <div className="mx-auto max-w-5xl px-6 py-8">
         <header className="mb-6">
           <p className="text-utility inline-flex items-center gap-1.5 text-[var(--color-gold)]">
             <Sparkles size={13} /> Your reading agent
@@ -112,7 +112,7 @@ function AgentOnboarding({ userId, onDone }: { userId: string; onDone: () => voi
   const estHigh = Math.round(limit / 0.03);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mx-auto max-w-5xl">
       <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         <p className="text-sm leading-relaxed text-[var(--color-muted)]">
           Hey. Before I start finding things for you, I want to understand what you actually like. Tell me a few series

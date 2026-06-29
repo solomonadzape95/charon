@@ -87,8 +87,8 @@ export async function runAgent(userId: string): Promise<RunResult> {
   if (!user) return { ran: false, reason: "user missing", spent: 0, chaptersRead: 0, remaining: 0 };
 
   const limit = Number(config.weekly_limit_usdc);
-  let weeklySpent = Number(config.weekly_spent_usdc);
-  let walletBalance = Number(config.wallet_balance_usdc); // the agent's own funded budget
+  let weeklySpent = Number(config.weekly_spent_usdc) || 0;
+  let walletBalance = Number(config.wallet_balance_usdc) || 0; // the agent's own funded budget
 
   // ── Week reset: return the unspent to the reader, then start a fresh week. ──
   if (Date.now() - new Date(config.week_start).getTime() > WEEK_MS) {
@@ -111,7 +111,7 @@ export async function runAgent(userId: string): Promise<RunResult> {
     }
     await adjustUserBalance(userId, -fund, "agent_fund");
     walletBalance = fund;
-    await updateAgentConfig(userId, { wallet_balance_usdc: walletBalance, week_funded_usdc: Number(config.week_funded_usdc) + fund });
+    await updateAgentConfig(userId, { wallet_balance_usdc: walletBalance, week_funded_usdc: (Number(config.week_funded_usdc) || 0) + fund });
     // Best-effort: top up the agent wallet's standing on-chain Gateway deposit.
     if (config.agent_wallet_pk) {
       try {
@@ -166,23 +166,20 @@ export async function runAgent(userId: string): Promise<RunResult> {
       seriesId: series.id,
     });
 
-    // A confirmed match goes straight into the reader's library.
-    const committing = decision.decision === "CONTINUE";
-    if (committing) {
-      try {
-        await setFollowMode(userId, series.id, "standard");
-      } catch {
-        /* non-blocking */
-      }
+    // Any series the agent reads goes into the reader's library so they can find it.
+    try {
+      await setFollowMode(userId, series.id, "standard");
+    } catch {
+      /* non-blocking */
     }
 
     // Series Pass vs. chapter-by-chapter: if the pass is genuinely cheaper than
     // buying the chapters left AND it fits the budget, buy it — the reader then
-    // owns the whole series and never pays for it again.
+    // owns the whole series and never pays for it again. Only on a strong match.
     const passPrice = series.series_pass_price_usdc != null ? Number(series.series_pass_price_usdc) : null;
     const remainingCost = unpaid.reduce((s, c) => s + Number(c.current_price_usdc), 0);
     if (
-      committing &&
+      decision.decision === "CONTINUE" &&
       passPrice != null &&
       passPrice > 0 &&
       unpaid.length >= 4 &&

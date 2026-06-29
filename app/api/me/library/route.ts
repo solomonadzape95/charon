@@ -20,21 +20,23 @@ export async function GET(req: NextRequest) {
     .select("mode, series ( id, slug, title, genre, status, cover_image )")
     .eq("user_id", userId);
 
-  const { data: sessions } = await db
-    .from("sessions")
+  // History from settled payments — captures BOTH human and agent reads (agent
+  // reads create payments, not sessions). Pay-once means one payment per chapter.
+  const { data: pays } = await db
+    .from("payments")
     .select("created_at, chapters ( series ( id, slug, title, genre, cover_image ) )")
     .eq("user_id", userId)
-    .not("ended_at", "is", null)
+    .eq("status", "settled")
     .order("created_at", { ascending: false })
-    .limit(200);
+    .limit(400);
 
   // Group reading history by series.
   const hist = new Map<string, { id: string; slug: string | null; title: string; genre: string | null; cover_image: string | null; chaptersRead: number; lastReadAt: string }>();
-  for (const s of sessions ?? []) {
+  for (const p of pays ?? []) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const ser = (s as any).chapters?.series;
+    const ser = (p as any).chapters?.series;
     if (!ser?.id) continue;
-    const cur = hist.get(ser.id) ?? { id: ser.id, slug: ser.slug ?? null, title: ser.title, genre: ser.genre ?? null, cover_image: ser.cover_image ?? null, chaptersRead: 0, lastReadAt: (s as { created_at: string }).created_at };
+    const cur = hist.get(ser.id) ?? { id: ser.id, slug: ser.slug ?? null, title: ser.title, genre: ser.genre ?? null, cover_image: ser.cover_image ?? null, chaptersRead: 0, lastReadAt: (p as { created_at: string }).created_at };
     cur.chaptersRead += 1;
     hist.set(ser.id, cur);
   }
