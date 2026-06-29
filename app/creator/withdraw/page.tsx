@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Wallet, Building2, Check } from "lucide-react";
-import { AccountNav } from "@/components/AccountNav";
+import { Breadcrumb } from "@/components/Breadcrumb";
+import { SkeletonBlock, StatGridSkeleton } from "@/components/Skeletons";
 import { getCreatorId, resolveCreatorId } from "@/lib/account";
 
 interface Creator {
@@ -112,10 +113,14 @@ export default function WithdrawPage() {
 
   if (!creator) {
     return (
-      <>
-        <AccountNav />
-        <p className="mx-auto max-w-5xl px-6 py-12 text-[var(--color-muted)]">Loading…</p>
-      </>
+      <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
+        <div className="space-y-3">
+          <SkeletonBlock className="h-4 w-24" />
+          <SkeletonBlock className="h-10 w-48" />
+        </div>
+        <StatGridSkeleton count={2} />
+        <SkeletonBlock className="h-72 w-full" />
+      </div>
     );
   }
 
@@ -125,14 +130,11 @@ export default function WithdrawPage() {
   const receive = Math.max(0, Math.round((amt - fee) * 100) / 100);
 
   return (
-    <>
-      <AccountNav />
-      <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
+    <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
         <div>
-          <Link href="/dashboard" className="text-sm text-[var(--color-muted)] hover:text-[var(--color-ink)]">
-            ← Dashboard
-          </Link>
+          <Breadcrumb items={[{ label: "Studio", href: "/creator/studio" }, { label: "Withdraw" }]} />
           <h1 className="font-display display-md mt-2 font-semibold">Withdraw</h1>
+          <p className="mt-2 text-[var(--color-muted)]">Cash out cleared earnings to your wallet or bank — no minimum, no payout cycle.</p>
         </div>
 
         {/* Balances */}
@@ -163,23 +165,36 @@ export default function WithdrawPage() {
         <section className="space-y-4 border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
           <div>
             <p className="text-utility mb-2 text-[var(--color-muted)]">Withdraw to</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 sm:grid-cols-2">
               <DestTab
                 active={dest === "usdc_wallet"}
                 onClick={() => setDest("usdc_wallet")}
                 icon={Wallet}
                 title="USDC wallet"
+                badge="No fee"
                 sub={creator.wallet_address ? `${creator.wallet_address.slice(0, 6)}…${creator.wallet_address.slice(-4)}` : "No wallet on file"}
               />
-              <DestTab active={dest === "bank"} onClick={() => setDest("bank")} icon={Building2} title="Bank account" sub="1.5% conversion fee" />
+              <DestTab
+                active={dest === "bank"}
+                onClick={() => setDest("bank")}
+                icon={Building2}
+                title="Bank account"
+                badge="1.5%"
+                sub="Cash out to your local bank via Circle."
+              />
             </div>
-            {dest === "usdc_wallet" && !creator.wallet_address && (
+            {dest === "usdc_wallet" && !creator.wallet_address ? (
               <p className="mt-2 text-xs text-red-400">
                 Add a payout wallet in{" "}
                 <Link href="/creator/onboarding" className="underline">
                   setup
                 </Link>{" "}
-                to withdraw to USDC.
+                to withdraw to USDC — or switch to bank above.
+              </p>
+            ) : (
+              <p className="mt-2 text-xs text-[var(--color-muted)]">
+                Both are always available — having a wallet on file never stops you cashing out to your bank, and the
+                reverse. Pick a different destination any time.
               </p>
             )}
           </div>
@@ -245,8 +260,7 @@ export default function WithdrawPage() {
             </ul>
           )}
         </section>
-      </div>
-    </>
+    </div>
   );
 }
 
@@ -256,25 +270,48 @@ function DestTab({
   icon: Icon,
   title,
   sub,
+  badge,
 }: {
   active: boolean;
   onClick: () => void;
   icon: typeof Wallet;
   title: string;
   sub: string;
+  badge?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-3 border p-4 text-left transition-colors ${
-        active ? "border-[var(--color-gold)] bg-[color-mix(in_srgb,var(--color-gold)_8%,transparent)]" : "border-[var(--color-border)] hover:border-[var(--color-muted)]"
+      aria-pressed={active}
+      className={`relative flex flex-col gap-3 border p-5 text-left transition-colors ${
+        active
+          ? "border-[var(--color-gold)] bg-[color-mix(in_srgb,var(--color-gold)_8%,transparent)]"
+          : "border-[var(--color-border)] hover:border-[var(--color-muted)]"
       }`}
     >
-      <Icon size={20} className={active ? "text-[var(--color-gold)]" : "text-[var(--color-muted)]"} strokeWidth={1.5} />
+      <span
+        className={`absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border transition-colors ${
+          active ? "border-[var(--color-gold)] bg-[var(--color-gold)] text-black" : "border-[var(--color-border)] text-transparent"
+        }`}
+      >
+        <Check size={12} strokeWidth={3} />
+      </span>
+      <span
+        className={`grid h-11 w-11 place-items-center border ${
+          active ? "border-[var(--color-gold)] text-[var(--color-gold)]" : "border-[var(--color-border)] text-[var(--color-muted)]"
+        }`}
+      >
+        <Icon size={20} strokeWidth={1.5} />
+      </span>
       <div className="min-w-0">
-        <p className="text-sm font-semibold">{title}</p>
-        <p className="truncate text-xs text-[var(--color-muted)]">{sub}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-display text-lg font-semibold">{title}</p>
+          {badge && (
+            <span className="text-utility border border-[var(--color-border)] bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[var(--color-muted)]">{badge}</span>
+          )}
+        </div>
+        <p className="mt-1 truncate text-sm leading-relaxed text-[var(--color-muted)]">{sub}</p>
       </div>
     </button>
   );

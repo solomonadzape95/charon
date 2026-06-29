@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet, Building2, Check, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { getUserId, getEmail, getCreatorId, setCreatorId as saveCreatorId } from "@/lib/account";
+import { setMode } from "@/lib/mode";
+import { Loading } from "@/components/Loading";
 import { CoverUpload, PanelUpload } from "@/components/ImageUpload";
 
 const COUNTRIES = ["Nigeria", "Indonesia", "Philippines", "Brazil", "India", "Kenya", "United States", "United Kingdom"];
@@ -42,7 +44,13 @@ export default function CreatorOnboarding() {
   // Step 4 — series pass
   const [passPrice, setPassPrice] = useState("");
 
-  const firstGenre = genres.split(",")[0]?.trim() || null;
+  // Store the full comma-separated genre list — these become the series' tags.
+  const genreList =
+    genres
+      .split(",")
+      .map((g) => g.trim())
+      .filter(Boolean)
+      .join(", ") || null;
 
   useEffect(() => {
     const uid = getUserId();
@@ -145,7 +153,7 @@ export default function CreatorOnboarding() {
             creatorId,
             title: sTitle,
             description: sDesc || undefined,
-            genre: firstGenre,
+            genre: genreList,
             coverImage: coverUrl || undefined,
           }),
         });
@@ -175,14 +183,32 @@ export default function CreatorOnboarding() {
       }
       const price = Number(cdata.chapter.base_price_usdc);
       setPriced({ price, reasoning: cdata.pricingReasoning, chapterId: cdata.chapter.id });
-      setPassPrice(Math.max(0.99, Math.round(price * 10 * 100) / 100).toFixed(2));
+      // Series Pass ≈ 85% of the expected per-chapter cost. With one chapter so
+      // far, anchor on a ~12-chapter season (0.85 × 12 ≈ 10.2× the base price).
+      setPassPrice(Math.max(0.99, Math.round(price * 10.2 * 100) / 100).toFixed(2));
       setStep(3);
     } finally {
       setBusy(false);
     }
   }
 
-  if (!creatorId) return null;
+  async function finish(savePass: boolean) {
+    setMode("studio");
+    if (savePass && seriesId && Number(passPrice) > 0) {
+      try {
+        await fetch("/api/series", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: seriesId, passPrice: Number(passPrice) }),
+        });
+      } catch {
+        /* non-blocking — they can set it later in series settings */
+      }
+    }
+    router.push("/creator/studio");
+  }
+
+  if (!creatorId) return <Loading label="Setting up your studio…" full />;
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-4.5rem)] max-w-2xl flex-col px-6 py-10">
@@ -423,15 +449,17 @@ export default function CreatorOnboarding() {
                   className="charon-input pl-7"
                 />
               </div>
-              <span className="text-xs text-[var(--color-muted)]">Agent 2 suggested, based on your chapter pricing</span>
+              <span className="text-xs text-[var(--color-muted)]">
+                ≈ 85% of the expected per-chapter cost — guaranteed up-front instead of hoping readers finish.
+              </span>
             </div>
           </div>
 
           <div className="mt-auto flex items-center justify-between pt-12">
-            <button onClick={() => router.push("/dashboard")} className="btn-outline">
+            <button onClick={() => finish(false)} className="btn-outline">
               Skip for now
             </button>
-            <button onClick={() => router.push("/dashboard")} className="btn-coin">
+            <button onClick={() => finish(true)} className="btn-coin">
               Finish setup <ArrowRight size={16} />
             </button>
           </div>

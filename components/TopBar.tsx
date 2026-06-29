@@ -8,7 +8,7 @@ import { useScrollHide } from "@/lib/use-scroll-hide";
 
 // App surfaces render their own AccountNav header, so the marketing TopBar is
 // hidden there. The /creator marketing landing keeps it; /creator/* app pages don't.
-const HIDDEN_PREFIXES = ["/join", "/onboarding", "/dashboard", "/library", "/wallet", "/read", "/chapter", "/profile", "/series", "/admin"];
+const HIDDEN_PREFIXES = ["/join", "/onboarding", "/dashboard", "/library", "/wallet", "/agent", "/read", "/chapter", "/profile", "/series", "/author", "/admin"];
 
 function isHidden(pathname: string) {
   if (HIDDEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) return true;

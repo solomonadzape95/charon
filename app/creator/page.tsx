@@ -76,8 +76,8 @@ export default function CreatorLanding() {
             <Link href="/creator/onboarding" className="btn-coin">
               Start publishing
             </Link>
-            <Link href="/dashboard" className="btn-outline">
-              Go to your dashboard
+            <Link href="/creator/studio" className="btn-outline">
+              Go to your studio
             </Link>
           </div>
         </div>
