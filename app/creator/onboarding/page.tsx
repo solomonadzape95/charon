@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet, Building2, Check, ArrowRight, Sparkles } from "lucide-react";
-import { coverFor } from "@/lib/covers";
+import { Wallet, Building2, Check, ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 import { getUserId, getEmail, getCreatorId, setCreatorId as saveCreatorId } from "@/lib/account";
+import { CoverUpload, PanelUpload } from "@/components/ImageUpload";
 
 const COUNTRIES = ["Nigeria", "Indonesia", "Philippines", "Brazil", "India", "Kenya", "United States", "United Kingdom"];
 
@@ -30,8 +30,10 @@ export default function CreatorOnboarding() {
   // Step 3 — first series + chapter
   const [sTitle, setSTitle] = useState("");
   const [sDesc, setSDesc] = useState("");
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [contentType, setContentType] = useState<"text" | "images">("text");
   const [content, setContent] = useState("");
+  const [panels, setPanels] = useState<string[]>([]);
   const [chTitle, setChTitle] = useState("");
   const [override, setOverride] = useState("");
   const [seriesId, setSeriesId] = useState<string | null>(null);
@@ -126,6 +128,11 @@ export default function CreatorOnboarding() {
     e.preventDefault();
     if (!creatorId) return;
     setError("");
+    const chapterContent = contentType === "images" ? JSON.stringify(panels) : content;
+    if (contentType === "images" && panels.length === 0) {
+      setError("Add at least one panel image to publish a manga chapter.");
+      return;
+    }
     setBusy(true);
     try {
       // Create the series once, then upload the first chapter (Agent 2 prices it).
@@ -134,7 +141,13 @@ export default function CreatorOnboarding() {
         const sres = await fetch("/api/series", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ creatorId, title: sTitle, description: sDesc || undefined, genre: firstGenre }),
+          body: JSON.stringify({
+            creatorId,
+            title: sTitle,
+            description: sDesc || undefined,
+            genre: firstGenre,
+            coverImage: coverUrl || undefined,
+          }),
         });
         const sdata = await sres.json();
         if (!sres.ok || !sdata.series) {
@@ -151,7 +164,7 @@ export default function CreatorOnboarding() {
           seriesId: sid,
           title: chTitle || undefined,
           contentType,
-          content,
+          content: chapterContent,
           overrideBasePrice: override ? Number(override) : undefined,
         }),
       });
@@ -208,7 +221,7 @@ export default function CreatorOnboarding() {
             {genres.trim() && (
               <div className="flex flex-wrap gap-2">
                 {genres.split(",").map((g) => g.trim()).filter(Boolean).map((g) => (
-                  <span key={g} className="border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2.5 py-1 text-xs text-[var(--color-muted)]">
+                  <span key={g} className="text-utility border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2.5 py-1 text-[var(--color-muted)]">
                     {g}
                   </span>
                 ))}
@@ -233,9 +246,23 @@ export default function CreatorOnboarding() {
             Required before you publish — you need to be able to receive payment before your work goes live.
           </p>
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <PayoutTab active={payout === "usdc_wallet"} onClick={() => setPayout("usdc_wallet")} icon={Wallet} title="USDC wallet" sub="Instant, no fee" />
-            <PayoutTab active={payout === "bank"} onClick={() => setPayout("bank")} icon={Building2} title="Bank account" sub="1.5% conversion" />
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <PayoutTab
+              active={payout === "usdc_wallet"}
+              onClick={() => setPayout("usdc_wallet")}
+              icon={Wallet}
+              title="USDC wallet"
+              sub="Paid instantly on Arc, no fees. Withdraw any amount, any time."
+              badge="No fee"
+            />
+            <PayoutTab
+              active={payout === "bank"}
+              onClick={() => setPayout("bank")}
+              icon={Building2}
+              title="Bank account"
+              sub="Cash out to your local bank via Circle. 1.5% conversion fee."
+              badge="1.5%"
+            />
           </div>
 
           <div className="mt-4 space-y-3">
@@ -267,8 +294,8 @@ export default function CreatorOnboarding() {
           </div>
 
           <div className="mt-auto flex items-center justify-between pt-12">
-            <button onClick={() => setStep(0)} className="text-sm text-[var(--color-muted)] hover:text-[var(--color-ink)]">
-              ← Back
+            <button onClick={() => setStep(0)} className="btn-outline">
+              <ArrowLeft size={16} /> Back
             </button>
             <button disabled={busy} onClick={savePayout} className="btn-coin">
               Continue <ArrowRight size={16} />
@@ -288,8 +315,7 @@ export default function CreatorOnboarding() {
 
           <form onSubmit={publishFirst} className="mt-6 space-y-3">
             <div className="flex gap-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={coverFor(seriesId ?? sTitle ?? "new", null)} alt="" className="hidden h-28 w-20 shrink-0 object-cover grayscale-[0.15] sm:block" />
+              <CoverUpload value={coverUrl} onChange={setCoverUrl} folder="covers" />
               <div className="flex-1 space-y-3">
                 <input required placeholder="Series title" value={sTitle} onChange={(e) => setSTitle(e.target.value)} className="charon-input" />
                 <textarea
@@ -298,33 +324,42 @@ export default function CreatorOnboarding() {
                   onChange={(e) => setSDesc(e.target.value)}
                   className="charon-input h-16 resize-none"
                 />
+                <p className="text-xs text-[var(--color-muted)]">Tap the cover to upload artwork (optional).</p>
               </div>
             </div>
 
             <div className="rule my-2" />
 
             <input placeholder="Chapter 1 title (optional)" value={chTitle} onChange={(e) => setChTitle(e.target.value)} className="charon-input" />
-            <div className="flex gap-2 text-sm">
+            <div className="flex gap-2">
               {(["text", "images"] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setContentType(t)}
-                  className={`rounded-full border px-3 py-1.5 ${
-                    contentType === t ? "border-[var(--color-gold)] text-[var(--color-gold)]" : "border-[var(--color-border)] text-[var(--color-muted)]"
+                  className={`text-utility rounded-full border px-4 py-1.5 transition-colors ${
+                    contentType === t
+                      ? "border-[var(--color-gold)] bg-[color-mix(in_srgb,var(--color-gold)_10%,transparent)] text-[var(--color-gold)]"
+                      : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-ink)]"
                   }`}
                 >
-                  {t === "text" ? "Text (.txt / .docx / paste)" : "Images (manga)"}
+                  {t === "text" ? "Text" : "Manga / images"}
                 </button>
               ))}
             </div>
-            <textarea
-              required
-              placeholder={contentType === "text" ? "Paste your first chapter…" : 'Image URLs — one per line or a JSON array'}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="charon-input h-48 resize-none font-mono text-sm"
-            />
+
+            {contentType === "text" ? (
+              <textarea
+                required
+                placeholder="Paste your first chapter…"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className="charon-input h-48 resize-none text-sm"
+              />
+            ) : (
+              <PanelUpload value={panels} onChange={setPanels} folder="chapters" />
+            )}
+
             <div className="flex items-center gap-2">
               <div className="relative w-48">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]">$</span>
@@ -343,8 +378,8 @@ export default function CreatorOnboarding() {
             {error && <p className="text-sm text-red-400">{error}</p>}
 
             <div className="flex items-center justify-between pt-4">
-              <button type="button" onClick={() => setStep(1)} className="text-sm text-[var(--color-muted)] hover:text-[var(--color-ink)]">
-                ← Back
+              <button type="button" onClick={() => setStep(1)} className="btn-outline">
+                <ArrowLeft size={16} /> Back
               </button>
               <button disabled={busy} className="btn-coin">
                 {busy ? "Pricing…" : "Submit to pricing agent"}
@@ -393,7 +428,7 @@ export default function CreatorOnboarding() {
           </div>
 
           <div className="mt-auto flex items-center justify-between pt-12">
-            <button onClick={() => router.push("/dashboard")} className="text-sm text-[var(--color-muted)] hover:text-[var(--color-ink)]">
+            <button onClick={() => router.push("/dashboard")} className="btn-outline">
               Skip for now
             </button>
             <button onClick={() => router.push("/dashboard")} className="btn-coin">
@@ -412,25 +447,46 @@ function PayoutTab({
   icon: Icon,
   title,
   sub,
+  badge,
 }: {
   active: boolean;
   onClick: () => void;
   icon: typeof Wallet;
   title: string;
   sub: string;
+  badge: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-3 border p-4 text-left transition-colors ${
-        active ? "border-[var(--color-gold)] bg-[color-mix(in_srgb,var(--color-gold)_8%,transparent)]" : "border-[var(--color-border)] hover:border-[var(--color-muted)]"
+      aria-pressed={active}
+      className={`relative flex flex-col gap-3 border p-5 text-left transition-colors ${
+        active
+          ? "border-[var(--color-gold)] bg-[color-mix(in_srgb,var(--color-gold)_8%,transparent)]"
+          : "border-[var(--color-border)] hover:border-[var(--color-muted)]"
       }`}
     >
-      <Icon size={20} className={active ? "text-[var(--color-gold)]" : "text-[var(--color-muted)]"} strokeWidth={1.5} />
+      <span
+        className={`absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full border transition-colors ${
+          active ? "border-[var(--color-gold)] bg-[var(--color-gold)] text-black" : "border-[var(--color-border)] text-transparent"
+        }`}
+      >
+        <Check size={12} strokeWidth={3} />
+      </span>
+      <span
+        className={`grid h-11 w-11 place-items-center border ${
+          active ? "border-[var(--color-gold)] text-[var(--color-gold)]" : "border-[var(--color-border)] text-[var(--color-muted)]"
+        }`}
+      >
+        <Icon size={20} strokeWidth={1.5} />
+      </span>
       <div>
-        <p className="text-sm font-semibold">{title}</p>
-        <p className="text-xs text-[var(--color-muted)]">{sub}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-display text-lg font-semibold">{title}</p>
+          <span className="text-utility border border-[var(--color-border)] bg-[var(--color-surface-2)] px-1.5 py-0.5 text-[var(--color-muted)]">{badge}</span>
+        </div>
+        <p className="mt-1 text-sm leading-relaxed text-[var(--color-muted)]">{sub}</p>
       </div>
     </button>
   );
