@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSeriesById, listChapters } from "@/lib/db";
+import { getSeriesByIdOrSlug, listChapters } from "@/lib/db";
 import { supabaseService } from "@/lib/supabase";
 import { suggestedSeriesPass, suggestedPreRelease } from "@/lib/pricing";
 import { isHtmlContent } from "@/lib/chapter-html";
@@ -13,11 +13,11 @@ export const runtime = "nodejs";
  */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ seriesId: string }> }) {
   const { seriesId } = await params;
-  const series = await getSeriesById(seriesId);
+  const series = await getSeriesByIdOrSlug(seriesId);
   if (!series) return NextResponse.json({ error: "not found" }, { status: 404 });
   const db = supabaseService();
 
-  const chapters = await listChapters(seriesId);
+  const chapters = await listChapters(series.id);
 
   // Earnings per chapter (settled payments).
   const chapterIds = chapters.map((c) => c.id);
@@ -35,8 +35,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ser
   }
 
   const [{ count: preRelease }, { count: passBuyers }] = await Promise.all([
-    db.from("follows").select("id", { count: "exact", head: true }).eq("series_id", seriesId).eq("mode", "pre_release"),
-    db.from("follows").select("id", { count: "exact", head: true }).eq("series_id", seriesId).eq("mode", "series_unlock"),
+    db.from("follows").select("id", { count: "exact", head: true }).eq("series_id", series.id).eq("mode", "pre_release"),
+    db.from("follows").select("id", { count: "exact", head: true }).eq("series_id", series.id).eq("mode", "series_unlock"),
   ]);
 
   return NextResponse.json({

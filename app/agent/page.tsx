@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Send, Play, Pause, Coins, ExternalLink } from "lucide-react";
+import { Sparkles, Send, Play, Pause, Coins, ExternalLink, Trash2 } from "lucide-react";
 import { AccountNav } from "@/components/AccountNav";
 import { SkeletonBlock } from "@/components/Skeletons";
 import { setMode } from "@/lib/mode";
@@ -292,6 +292,12 @@ function AgentConsole({
     loadFeed();
   }
 
+  async function stopAndReset() {
+    if (!confirm("Stop the agent and start over? Unspent budget is returned to your balance.")) return;
+    await fetch(`/api/agent/config?userId=${userId}`, { method: "DELETE" });
+    onConfig();
+  }
+
   const pct =
     config.weeklyLimit > 0
       ? Math.min(100, (config.weeklySpent / config.weeklyLimit) * 100)
@@ -336,6 +342,12 @@ function AgentConsole({
           >
             {config.paused ? <Play size={13} /> : <Pause size={13} />}{" "}
             {config.paused ? "Resume" : "Pause"}
+          </button>
+          <button
+            onClick={stopAndReset}
+            className="text-utility inline-flex items-center gap-1 px-2 py-2 text-[var(--color-muted)] transition-colors hover:text-red-400"
+          >
+            <Trash2 size={13} /> Stop &amp; reset
           </button>
           {config.walletAddress && (
             <a

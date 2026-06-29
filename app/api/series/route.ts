@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSeries, getCreatorById, getSeriesById, listSeries, listSeriesForCreator, updateSeries } from "@/lib/db";
+import { createSeries, getCreatorById, getSeriesByIdOrSlug, listSeries, listSeriesForCreator, updateSeries } from "@/lib/db";
 import { supabaseService, type SeriesStatus } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest) {
   }
   const { id } = body;
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const series = await getSeriesById(id);
+  const series = await getSeriesByIdOrSlug(id);
   if (!series) return NextResponse.json({ error: "not found" }, { status: 404 });
 
   const patch: Record<string, unknown> = {};
@@ -41,7 +41,7 @@ export async function PATCH(req: NextRequest) {
   // Series Pass / pre-release prices: a positive number sets the offer; null clears it.
   if (body.passPrice !== undefined) patch.series_pass_price_usdc = sanitizePrice(body.passPrice);
   if (body.preReleasePrice !== undefined) patch.pre_release_price_usdc = sanitizePrice(body.preReleasePrice);
-  if (Object.keys(patch).length) await updateSeries(id, patch);
+  if (Object.keys(patch).length) await updateSeries(series.id, patch);
 
   return NextResponse.json({ series: { ...series, ...patch } });
 }

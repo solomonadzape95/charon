@@ -98,7 +98,8 @@ export interface SettleResult {
  *   3. accrue the creator's net to escrow (clears in 7 days); the 5% fee stays
  *      in the treasury as platform revenue.
  * No on-chain call here — the real Arc settlement happens once, at withdrawal.
- * This is the core call Agent 1 (and the unlock flows) use.
+ * This is the core call the session/end route, the autonomous reader agent, and
+ * the unlock flows all use.
  */
 export async function settleSession(args: SettleSessionArgs): Promise<SettleResult> {
   const { userId, creator, chapterId, sessionId, amountUsd } = args;

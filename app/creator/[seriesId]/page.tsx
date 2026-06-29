@@ -180,7 +180,7 @@ export default function SeriesManagement({ params }: { params: Promise<{ seriesI
                 <button onClick={() => setEditing(true)} className="btn-outline">
                   <Pencil size={14} /> Edit details
                 </button>
-                <Link href={`/creator/${series.id}/upload`} className="btn-coin">
+                <Link href={`/creator/${series.slug ?? series.id}/upload`} className="btn-coin">
                   <Upload size={14} /> Upload chapter
                 </Link>
                 <Link href={`/series/${series.slug ?? series.id}`} className="btn-outline">
@@ -283,7 +283,7 @@ export default function SeriesManagement({ params }: { params: Promise<{ seriesI
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-2xl font-semibold">Chapters</h2>
-          <Link href={`/creator/${series.id}/upload`} className="btn-outline !py-2 !text-[0.72rem]">
+          <Link href={`/creator/${series.slug ?? series.id}/upload`} className="btn-outline !py-2 !text-[0.72rem]">
             <Upload size={13} /> Upload
           </Link>
         </div>
@@ -312,7 +312,7 @@ export default function SeriesManagement({ params }: { params: Promise<{ seriesI
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Link href={`/creator/${series.id}/edit/${c.id}`} className="btn-outline !py-2 !text-[0.7rem]">
+                  <Link href={`/creator/${series.slug ?? series.id}/edit/${c.id}`} className="btn-outline !py-2 !text-[0.7rem]">
                     <Pencil size={13} /> Edit
                   </Link>
                   <Link

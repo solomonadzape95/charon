@@ -3,7 +3,7 @@ import {
   createChapter,
   getChapterById,
   getCreatorById,
-  getSeriesById,
+  getSeriesByIdOrSlug,
   getUserById,
   listChapters,
   listSubscribers,
@@ -119,8 +119,9 @@ export async function POST(req: NextRequest) {
   if (!seriesId || !content?.trim()) {
     return NextResponse.json({ error: "seriesId and content required" }, { status: 400 });
   }
-  const series = await getSeriesById(seriesId);
+  const series = await getSeriesByIdOrSlug(seriesId);
   if (!series) return NextResponse.json({ error: "series not found" }, { status: 404 });
+  const realSeriesId = series.id; // resolve slug → uuid for all writes
 
   // Word count: text → count words; images → count of image URLs (panels).
   let storedContent = content;
@@ -143,7 +144,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const chapterNumber = await nextChapterNumber(seriesId);
+  const chapterNumber = await nextChapterNumber(realSeriesId);
 
   // Agent 2 prices the chapter (deterministic fallback if the model is down).
   const pricing = await priceChapter({
@@ -157,7 +158,7 @@ export async function POST(req: NextRequest) {
   });
 
   const chapter = await createChapter({
-    seriesId,
+    seriesId: realSeriesId,
     chapterNumber,
     title: body.title ?? null,
     contentType,
@@ -171,13 +172,13 @@ export async function POST(req: NextRequest) {
   });
 
   // Light momentum bump for an active series.
-  await updateSeries(seriesId, { momentum_score: Number(series.momentum_score) + 1 });
+  await updateSeries(realSeriesId, { momentum_score: Number(series.momentum_score) + 1 });
 
   // Mode 2 — pre-release: Agent 4 auto-pays subscribers the moment a chapter drops.
   let preReleaseUnlocks = 0;
   if (body.earlyAccess) {
     const creator = await getCreatorById(series.creator_id);
-    const subscribers = await listSubscribers(seriesId, "pre_release");
+    const subscribers = await listSubscribers(realSeriesId, "pre_release");
     if (creator) {
       for (const sub of subscribers) {
         const user = await getUserById(sub.user_id);

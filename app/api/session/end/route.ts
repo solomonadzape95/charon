@@ -20,7 +20,11 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /**
- * End a reading session: Agent 1 values it, then it settles to the creator on Arc.
+ * End a reading session: charge the chapter's current price (minus the reader's
+ * loyalty / binge / discovery discounts, capped by session cap + balance) and
+ * settle it to the creator on Arc. Pricing is deterministic (lib/pricing.ts);
+ * chapter prices are set by the Creator Pricing agent on upload and adjusted by
+ * the Dynamic Repricing cron.
  *   POST /api/session/end {
  *     sessionId, completionRate, scrollBackCount, timeSpentSeconds, readerComment?
  *   }

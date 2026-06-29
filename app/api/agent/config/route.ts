@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { addAgentMessage, getAgentConfig, getAgentSpendStats, getUserById, upsertAgentConfig } from "@/lib/db";
+import { addAgentMessage, adjustUserBalance, deleteAgentConfig, getAgentConfig, getAgentSpendStats, getUserById, upsertAgentConfig } from "@/lib/db";
 import { buildTasteProfile } from "@/lib/agents/reader-agent";
-import { getOnchainUsdc } from "@/lib/agent-wallet";
+import { getOnchainUsdc, returnAgentWalletOnchain } from "@/lib/agent-wallet";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -22,6 +22,28 @@ function shape(config: Awaited<ReturnType<typeof getAgentConfig>>) {
     walletBalance: Number(config.wallet_balance_usdc),
     weekFunded: Number(config.week_funded_usdc),
   };
+}
+
+/** Stop the agent entirely and start fresh — returns any unspent budget first. */
+export async function DELETE(req: NextRequest) {
+  const userId = req.nextUrl.searchParams.get("userId");
+  if (!userId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+  const config = await getAgentConfig(userId);
+  if (config) {
+    const left = Number(config.wallet_balance_usdc) || 0;
+    if (left > 0.001) {
+      if (config.agent_wallet_pk && process.env.TREASURY_WALLET_ADDRESS) {
+        try {
+          await returnAgentWalletOnchain(config.agent_wallet_pk, process.env.TREASURY_WALLET_ADDRESS, left);
+        } catch (e) {
+          console.warn("[charon] agent stop on-chain return:", (e as Error).message);
+        }
+      }
+      await adjustUserBalance(userId, left, "agent_return");
+    }
+    await deleteAgentConfig(userId);
+  }
+  return NextResponse.json({ ok: true });
 }
 
 export async function GET(req: NextRequest) {

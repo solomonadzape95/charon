@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
       wallet_address: creator.wallet_address,
     },
     balances,
-    series: series.map((s) => ({ id: s.id, title: s.title, status: s.status, cover_image: s.cover_image })),
+    series: series.map((s) => ({ id: s.id, slug: s.slug, title: s.title, status: s.status, cover_image: s.cover_image })),
     payments: payments
       .filter((p) => p.status === "settled")
       .map((p) => ({

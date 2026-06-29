@@ -10,7 +10,7 @@ import { StudioSkeleton } from "@/components/Skeletons";
 
 interface Earnings {
   creator: { id: string; name: string | null; balance_usd: number; total_earned_usdc: number; wallet_address: string | null };
-  series: { id: string; title: string; status: string; cover_image: string | null }[];
+  series: { id: string; slug: string | null; title: string; status: string; cover_image: string | null }[];
   payments: { id: string; amount: number; chapter: string | null; tx: string | null; created_at: string }[];
 }
 interface Analytics {
@@ -79,7 +79,7 @@ export function CreatorOverview({ creatorId }: { creatorId: string }) {
       if (d.series) {
         setSform({ title: "", genre: "", description: "" });
         setCreating(false);
-        router.push(`/creator/${d.series.id}`);
+        router.push(`/creator/${d.series.slug ?? d.series.id}`);
       }
     } finally {
       setBusy(false);
@@ -198,7 +198,7 @@ export function CreatorOverview({ creatorId }: { creatorId: string }) {
                       <span className="text-utility text-[var(--color-muted)]">{s.status}</span>
                       <span className="tabular text-sm font-semibold text-[var(--color-gold)]">${earned.toFixed(2)}</span>
                     </div>
-                    <Link href={`/creator/${s.id}`} className="font-display mt-1 text-xl font-semibold leading-tight hover:text-[var(--color-gold)]">
+                    <Link href={`/creator/${s.slug ?? s.id}`} className="font-display mt-1 text-xl font-semibold leading-tight hover:text-[var(--color-gold)]">
                       {s.title}
                     </Link>
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--color-muted)]">
@@ -207,10 +207,10 @@ export function CreatorOverview({ creatorId }: { creatorId: string }) {
                       {avgCompletion > 0 && <span>{Math.round(avgCompletion * 100)}% completion</span>}
                     </div>
                     <div className="mt-auto flex gap-3 pt-3 text-utility">
-                      <Link href={`/creator/${s.id}/upload`} className="inline-flex items-center gap-1 text-[var(--color-gold)]">
+                      <Link href={`/creator/${s.slug ?? s.id}/upload`} className="inline-flex items-center gap-1 text-[var(--color-gold)]">
                         <Upload size={13} /> Upload
                       </Link>
-                      <Link href={`/creator/${s.id}`} className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-ink)]">
+                      <Link href={`/creator/${s.slug ?? s.id}`} className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-ink)]">
                         Manage <ArrowUpRight size={13} />
                       </Link>
                     </div>

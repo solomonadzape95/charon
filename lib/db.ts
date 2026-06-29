@@ -301,6 +301,11 @@ export async function getSeriesBySlug(slug: string): Promise<Series | null> {
   return (data as Series) ?? null;
 }
 
+/** Resolve a series from either its slug (preferred, in URLs) or its raw UUID. */
+export async function getSeriesByIdOrSlug(value: string): Promise<Series | null> {
+  return (await getSeriesBySlug(value)) ?? (await getSeriesById(value));
+}
+
 export async function listSeries(limit = 50): Promise<Series[]> {
   const { data } = await supabaseService()
     .from("series")
@@ -400,6 +405,13 @@ export async function upsertAgentConfig(input: {
 
 export async function updateAgentConfig(userId: string, patch: Partial<AgentConfig>): Promise<void> {
   await supabaseService().from("agent_config").update(patch).eq("user_id", userId);
+}
+
+/** Tear down a reader's agent entirely (config + its feed) so they can start over. */
+export async function deleteAgentConfig(userId: string): Promise<void> {
+  const db = supabaseService();
+  await db.from("agent_messages").delete().eq("user_id", userId);
+  await db.from("agent_config").delete().eq("user_id", userId);
 }
 
 export async function addAgentMessage(input: {

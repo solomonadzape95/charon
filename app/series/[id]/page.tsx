@@ -198,7 +198,7 @@ export default async function SeriesPage({
             </div>
             <div className="flex flex-wrap gap-3 pt-1">
               {chapters[0] && (
-                <Link href={`/chapter/${chapters[0].id}`} className="btn-coin">
+                <Link href={`/series/${series.slug ?? series.id}/${chapters[0].chapter_number}`} className="btn-coin">
                   Start reading
                 </Link>
               )}
@@ -276,7 +276,7 @@ export default async function SeriesPage({
                 {chapters.map((c) => (
                   <li key={c.id}>
                     <Link
-                      href={`/chapter/${c.id}`}
+                      href={`/series/${series.slug ?? series.id}/${c.chapter_number}`}
                       className="flex items-center gap-4 bg-[var(--color-surface)] px-4 py-3 transition-colors hover:bg-[var(--color-surface-2)]"
                     >
                       <span className="tabular w-8 shrink-0 text-sm text-[var(--color-muted)]">

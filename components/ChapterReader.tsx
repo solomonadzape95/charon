@@ -273,6 +273,14 @@ export function ChapterReader(props: Props) {
 
   const startStr = props.chapterNumber ? `Chapter ${props.chapterNumber}` : props.title;
 
+  // Clean, slug-based chapter URL: /series/<slug>/<n>. Falls back to the legacy
+  // /chapter/<id> (which redirects) if we don't have the number on hand.
+  const chHref = (id: string | null): string => {
+    if (!id) return "#";
+    const n = props.chapters?.find((c) => c.id === id)?.n;
+    return n != null ? `/series/${props.seriesId}/${n}` : `/chapter/${id}`;
+  };
+
   return (
     <div style={{ background: theme.bg, color: theme.fg }} className="min-h-screen transition-colors">
       {/* Top progress bar */}
@@ -296,7 +304,7 @@ export function ChapterReader(props: Props) {
               currentId={props.chapterId}
               label={startStr}
               theme={theme}
-              onPick={(id) => router.push(`/chapter/${id}`)}
+              onPick={(id) => router.push(chHref(id))}
             />
           ) : (
             <p className="text-utility hidden min-w-0 truncate text-center sm:block">{startStr}</p>
@@ -424,7 +432,7 @@ export function ChapterReader(props: Props) {
           {/* Navigation — plain text, gold on hover */}
           <div className="flex items-center justify-between gap-4 text-sm font-medium">
             {props.prevChapterId ? (
-              <Link href={`/chapter/${props.prevChapterId}`} className={NAV_CLASS} style={navStyle}>
+              <Link href={chHref(props.prevChapterId)} className={NAV_CLASS} style={navStyle}>
                 <ChevronLeft size={16} /> Previous
               </Link>
             ) : (
@@ -443,7 +451,7 @@ export function ChapterReader(props: Props) {
                 Sign in to continue <ChevronRight size={16} />
               </Link>
             ) : props.nextChapterId ? (
-              <Link href={`/chapter/${props.nextChapterId}`} className={NAV_CLASS} style={navStyle}>
+              <Link href={chHref(props.nextChapterId)} className={NAV_CLASS} style={navStyle}>
                 Next <ChevronRight size={16} />
               </Link>
             ) : (

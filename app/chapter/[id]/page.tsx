@@ -1,85 +1,18 @@
-import { notFound } from "next/navigation";
-import { getChapterById, getCreatorById, getSeriesById, getUserByEmail, hasPaidForChapter, listChapters } from "@/lib/db";
-import { ChapterReader } from "@/components/ChapterReader";
-import { GuestGate } from "@/components/GuestGate";
-import { estimatedReadMinutes } from "@/lib/pricing";
-import { supabaseServerAuth } from "@/lib/supabase-server";
+import { notFound, redirect } from "next/navigation";
+import { getChapterById, getSeriesById } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function ChapterPage({ params }: { params: Promise<{ id: string }> }) {
+/**
+ * Legacy chapter URL. Chapters are now read at the clean slug-based route
+ * /series/<slug>/<n>; this resolves the old UUID link and redirects there so
+ * stored links (bookmarks, history) keep working.
+ */
+export default async function ChapterRedirect({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const chapter = await getChapterById(id);
   if (!chapter) notFound();
   const series = await getSeriesById(chapter.series_id);
   if (!series) notFound();
-
-  // Find adjacent chapters for navigation.
-  const chapters = await listChapters(series.id);
-  const idx = chapters.findIndex((c) => c.id === id);
-  const next = idx >= 0 && idx < chapters.length - 1 ? chapters[idx + 1] : null;
-  const prev = idx > 0 ? chapters[idx - 1] : null;
-  const firstChapterId = chapters[0]?.id ?? null;
-  const seriesSlug = series.slug ?? series.id;
-
-  // Auth check (trusted session). Guests read only the first chapter; later
-  // chapters are gated server-side so their content is never sent to the client.
-  const {
-    data: { user },
-  } = await (await supabaseServerAuth()).auth.getUser();
-  const guest = !user;
-
-  // Owner detection — if the signed-in account is the creator of this series,
-  // they're previewing their own work: no session is opened and nothing is ever
-  // charged. The settle endpoint enforces the same rule as a backstop.
-  let owner = false;
-  let alreadyPaid = false;
-  if (user?.email) {
-    const creator = await getCreatorById(series.creator_id);
-    owner =
-      !!creator?.email && creator.email.trim().toLowerCase() === user.email.trim().toLowerCase();
-    // Already own this chapter? Then re-reads open NO session at all — free,
-    // and no clutter of duplicate "free re-read" rows in history.
-    if (!owner) {
-      const appUser = await getUserByEmail(user.email.trim().toLowerCase());
-      if (appUser) alreadyPaid = await hasPaidForChapter(appUser.id, chapter.id);
-    }
-  }
-
-  if (guest && chapter.chapter_number > 1) {
-    return (
-      <GuestGate
-        seriesTitle={series.title}
-        seriesSlug={seriesSlug}
-        n={chapter.chapter_number}
-        title={chapter.title ?? `Chapter ${chapter.chapter_number}`}
-        teaser={(chapter.content ?? "").replace(/\s+/g, " ").trim().slice(0, 340)}
-        firstChapterId={firstChapterId}
-      />
-    );
-  }
-
-  return (
-    <ChapterReader
-      chapterId={chapter.id}
-      title={chapter.title ?? `Chapter ${chapter.chapter_number}`}
-      seriesTitle={series.title}
-      seriesId={seriesSlug}
-      contentType={chapter.content_type}
-      content={chapter.content ?? ""}
-      price={Number(chapter.current_price_usdc)}
-      estReadMin={estimatedReadMinutes(chapter.word_count)}
-      nextChapterId={next?.id ?? null}
-      prevChapterId={prev?.id ?? null}
-      chapterNumber={chapter.chapter_number}
-      chapters={chapters.map((c) => ({
-        id: c.id,
-        n: c.chapter_number,
-        title: c.title ?? `Chapter ${c.chapter_number}`,
-      }))}
-      guest={guest}
-      owner={owner}
-      alreadyPaid={alreadyPaid}
-    />
-  );
+  redirect(`/series/${series.slug ?? series.id}/${chapter.chapter_number}`);
 }
