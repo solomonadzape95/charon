@@ -12,6 +12,8 @@ import {
 import { priceChapter } from "@/lib/agents/pricing";
 import { settleSession } from "@/lib/payments";
 import { supabaseService } from "@/lib/supabase";
+import { sanitizeHtml } from "@/lib/sanitize-html";
+import { isHtmlContent } from "@/lib/chapter-html";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -71,9 +73,16 @@ export async function POST(req: NextRequest) {
   if (!series) return NextResponse.json({ error: "series not found" }, { status: 404 });
 
   // Word count: text → count words; images → count of image URLs (panels).
+  let storedContent = content;
   let wordCount = 0;
   if (contentType === "text") {
-    wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+    if (isHtmlContent(content)) {
+      storedContent = sanitizeHtml(content);
+      const text = storedContent.replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/gi, " ");
+      wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+    } else {
+      wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+    }
   } else {
     try {
       const arr = JSON.parse(content);
@@ -102,7 +111,7 @@ export async function POST(req: NextRequest) {
     chapterNumber,
     title: body.title ?? null,
     contentType,
-    content,
+    content: storedContent,
     wordCount,
     floorPrice: pricing.floorPrice,
     basePrice: pricing.basePrice,

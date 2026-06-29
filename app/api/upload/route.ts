@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
+import sharp from "sharp";
 import { supabaseService } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -28,15 +29,25 @@ export async function POST(req: NextRequest) {
   }
 
   const folder = (req.nextUrl.searchParams.get("folder") || "uploads").replace(/[^a-z0-9/_-]/gi, "") || "uploads";
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-  const path = `${folder}/${randomUUID()}.${ext}`;
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  // Optimize: manga panels → 800px wide (Webtoon spec), covers → 900px, both JPEG
+  // q88. Never upscale. If Sharp can't process it (e.g. animated/exotic), keep it.
+  const original = Buffer.from(await file.arrayBuffer());
+  let buffer: Uint8Array = original;
+  let contentType = file.type;
+  let ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  try {
+    const width = folder.startsWith("chapters") ? 800 : 900;
+    buffer = await sharp(original).rotate().resize(width, null, { withoutEnlargement: true }).jpeg({ quality: 88 }).toBuffer();
+    contentType = "image/jpeg";
+    ext = "jpg";
+  } catch {
+    /* keep the original buffer */
+  }
+
+  const path = `${folder}/${randomUUID()}.${ext}`;
   const db = supabaseService();
-  const { error } = await db.storage.from(BUCKET).upload(path, buffer, {
-    contentType: file.type,
-    upsert: false,
-  });
+  const { error } = await db.storage.from(BUCKET).upload(path, buffer, { contentType, upsert: false });
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

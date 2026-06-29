@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Settings2, X, Minus, Plus, ChevronLeft, ChevronRight, ChevronDown, Bookmark, BookmarkCheck } from "lucide-react";
 import { SessionSummary, type SessionResult } from "@/components/SessionSummary";
 import { saveProgress, getChapterPct, isBookmarked, toggleBookmark } from "@/lib/reading";
+import { isHtmlContent, toReaderHtml } from "@/lib/chapter-html";
 
 interface Props {
   chapterId: string;
@@ -338,12 +339,20 @@ export function ChapterReader(props: Props) {
         <h1 className="font-display mb-10 text-3xl font-semibold sm:text-4xl">{props.title}</h1>
 
         {props.contentType === "text" ? (
-          <article
-            className="whitespace-pre-wrap"
-            style={{ fontFamily: FONTS[prefs.font], fontSize: `${prefs.size}px`, lineHeight: prefs.leading }}
-          >
-            {props.content}
-          </article>
+          isHtmlContent(props.content) ? (
+            <article
+              className="charon-prose"
+              style={{ fontFamily: FONTS[prefs.font], fontSize: `${prefs.size}px`, lineHeight: prefs.leading }}
+              dangerouslySetInnerHTML={{ __html: toReaderHtml(props.content) }}
+            />
+          ) : (
+            <article
+              className="whitespace-pre-wrap"
+              style={{ fontFamily: FONTS[prefs.font], fontSize: `${prefs.size}px`, lineHeight: prefs.leading }}
+            >
+              {props.content}
+            </article>
+          )
         ) : (
           <ImageReader content={props.content} />
         )}

@@ -202,6 +202,73 @@ a {
   }
 }
 
+/* Chapter prose — used by the editor and the reader. Theme-agnostic: colours
+   derive from currentColor so it adapts to the reader's paper/sepia/dark themes. */
+.charon-prose p { margin: 0 0 1em; }
+.charon-prose p:last-child { margin-bottom: 0; }
+.charon-prose strong { font-weight: 700; }
+.charon-prose em { font-style: italic; }
+.charon-prose a { color: var(--color-gold); text-decoration: underline; }
+.charon-prose blockquote {
+  margin: 1.3em 0;
+  padding: 0.2em 0 0.2em 1.1em;
+  border-left: 2px solid color-mix(in srgb, currentColor 40%, transparent);
+  font-style: italic;
+  opacity: 0.92;
+}
+.charon-prose hr {
+  border: none;
+  margin: 2em 0;
+  text-align: center;
+}
+.charon-prose hr::before {
+  content: "* * *";
+  letter-spacing: 0.5em;
+  opacity: 0.5;
+}
+.charon-prose [data-type="spoiler"],
+.charon-prose .charon-spoiler {
+  margin: 1.2em 0;
+  padding: 0.7em 1em;
+  border: 1px dashed color-mix(in srgb, currentColor 35%, transparent);
+}
+.charon-prose [data-type="author-note"],
+.charon-prose .charon-author-note {
+  margin: 1.3em 0;
+  padding: 0.9em 1.1em;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+.charon-prose .charon-an-label {
+  display: block;
+  margin-bottom: 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.charon-prose .charon-spoiler summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.charon-prose .charon-spoiler[open] summary { margin-bottom: 0.7em; }
+.charon-prose.is-empty:first-child::before {
+  content: attr(data-placeholder);
+}
+/* TipTap placeholder */
+.charon-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--color-muted);
+}
+
 /* Hairline divider */
 .rule {
   height: 1px;
