@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Receipt } from "lucide-react";
 import { AccountNav } from "@/components/AccountNav";
 import { DepositPanel } from "@/components/DepositPanel";
 import { GiftPanel } from "@/components/GiftPanel";
@@ -101,7 +101,11 @@ export default function WalletPage() {
           {w === null ? (
             <ListSkeleton rows={4} />
           ) : !w.ledger.length ? (
-            <p className="text-[var(--color-muted)]">No transactions yet.</p>
+            <div className="flex flex-col items-center gap-2 border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-12 text-center">
+              <Receipt size={26} className="text-[var(--color-muted)]" strokeWidth={1.5} />
+              <p className="font-display text-lg font-semibold">No transactions yet</p>
+              <p className="max-w-sm text-sm text-[var(--color-muted)]">Add funds above, then every deposit, chapter, tip and gift shows up here.</p>
+            </div>
           ) : (
             <>
               <div className="flex flex-wrap gap-1.5">
@@ -124,7 +128,17 @@ export default function WalletPage() {
               </div>
 
               {filtered.length === 0 ? (
-                <p className="text-sm text-[var(--color-muted)]">No {filter === "all" ? "" : `${filter} `}transactions.</p>
+                <div className="border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-10 text-center">
+                  <p className="text-sm text-[var(--color-muted)]">
+                    {filter === "agent"
+                      ? "No agent activity yet — start your reading agent and fund a weekly budget."
+                      : filter === "tips"
+                        ? "No tips yet — tip an author from any chapter."
+                        : filter === "gifts"
+                          ? "No gifts yet — gift a deposit to another reader from above."
+                          : `No ${FILTERS.find((f) => f.id === filter)?.label.toLowerCase() ?? ""} transactions yet.`}
+                  </p>
+                </div>
               ) : (
                 <>
                   <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)]">
