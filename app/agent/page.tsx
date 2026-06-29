@@ -19,7 +19,13 @@ interface AgentConfig {
   walletAddress: string | null;
   walletBalance: number;
   weekFunded: number;
-  stats?: { totalFunded: number; totalReturned: number; totalSpent: number; chaptersRead: number };
+  onchainBalance?: number | null;
+  stats?: {
+    totalFunded: number;
+    totalReturned: number;
+    totalSpent: number;
+    chaptersRead: number;
+  };
 }
 interface FeedMsg {
   id: string;
@@ -63,10 +69,12 @@ export default function AgentPage() {
       <AccountNav />
       <div className="mx-auto max-w-5xl px-6 py-8">
         <header className="mb-6">
-          <p className="text-utility inline-flex items-center gap-1.5 text-[var(--color-gold)]">
+          <p className="text-utility inline-flex items-center gap-1.5 text-(--color-gold)">
             <Sparkles size={13} /> Your reading agent
           </p>
-          <h1 className="font-display display-md mt-1 font-semibold">Charon Agent</h1>
+          <h1 className="font-display display-md mt-1 font-semibold">
+            Charon Agent
+          </h1>
         </header>
 
         {!loaded ? (
@@ -75,16 +83,29 @@ export default function AgentPage() {
             <SkeletonBlock className="h-64 w-full" />
           </div>
         ) : !config?.configured ? (
-          <AgentOnboarding userId={userId!} onDone={() => userId && refresh(userId)} />
+          <AgentOnboarding
+            userId={userId!}
+            onDone={() => userId && refresh(userId)}
+          />
         ) : (
-          <AgentConsole userId={userId!} config={config} onConfig={() => userId && refresh(userId)} />
+          <AgentConsole
+            userId={userId!}
+            config={config}
+            onConfig={() => userId && refresh(userId)}
+          />
         )}
       </div>
     </>
   );
 }
 
-function AgentOnboarding({ userId, onDone }: { userId: string; onDone: () => void }) {
+function AgentOnboarding({
+  userId,
+  onDone,
+}: {
+  userId: string;
+  onDone: () => void;
+}) {
   const [loved, setLoved] = useState("");
   const [avoids, setAvoids] = useState("");
   const [limit, setLimit] = useState(3);
@@ -98,8 +119,14 @@ function AgentOnboarding({ userId, onDone }: { userId: string; onDone: () => voi
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
-          loved: loved.split(/[\n,]/).map((s) => s.trim()).filter(Boolean),
-          avoids: avoids.split(/[\n,]/).map((s) => s.trim()).filter(Boolean),
+          loved: loved
+            .split(/[\n,]/)
+            .map((s) => s.trim())
+            .filter(Boolean),
+          avoids: avoids
+            .split(/[\n,]/)
+            .map((s) => s.trim())
+            .filter(Boolean),
           weeklyLimit: limit,
         }),
       });
@@ -114,16 +141,20 @@ function AgentOnboarding({ userId, onDone }: { userId: string; onDone: () => voi
 
   return (
     <div className="space-y-6 mx-auto max-w-5xl">
-      <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-        <p className="text-sm leading-relaxed text-[var(--color-muted)]">
-          Hey. Before I start finding things for you, I want to understand what you actually like. Tell me a few series
-          you&apos;ve loved — anywhere, Webtoon, Royal Road, anything — and what kills the mood for you. I&apos;ll work
-          within a weekly budget, pay creators per chapter on Arc, and stop the moment something isn&apos;t worth it.
+      <div className="border border-border bg-surface p-5">
+        <p className="text-sm leading-relaxed text-muted">
+          Hey. Before I start finding things for you, I want to understand what
+          you actually like. Tell me a few series you&apos;ve loved — anywhere,
+          Webtoon, Royal Road, anything — and what kills the mood for you.
+          I&apos;ll work within a weekly budget, pay creators per chapter on
+          Arc, and stop the moment something isn&apos;t worth it.
         </p>
       </div>
 
       <div className="space-y-2">
-        <label className="text-utility text-[var(--color-muted)]">Series you&apos;ve loved</label>
+        <label className="text-utility text-muted">
+          Series you&apos;ve loved
+        </label>
         <textarea
           value={loved}
           onChange={(e) => setLoved(e.target.value)}
@@ -133,7 +164,9 @@ function AgentOnboarding({ userId, onDone }: { userId: string; onDone: () => voi
       </div>
 
       <div className="space-y-2">
-        <label className="text-utility text-[var(--color-muted)]">Instant drops — what to avoid</label>
+        <label className="text-utility text-muted">
+          Instant drops — what to avoid
+        </label>
         <textarea
           value={avoids}
           onChange={(e) => setAvoids(e.target.value)}
@@ -142,10 +175,12 @@ function AgentOnboarding({ userId, onDone }: { userId: string; onDone: () => voi
         />
       </div>
 
-      <div className="space-y-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+      <div className="space-y-3 border border-border bg-surface p-5">
         <div className="flex items-baseline justify-between">
-          <label className="text-utility text-[var(--color-muted)]">Weekly budget</label>
-          <span className="font-display text-2xl font-bold text-coin">${limit.toFixed(2)}/wk</span>
+          <label className="text-utility text-muted">Weekly budget</label>
+          <span className="font-display text-2xl font-bold text-coin">
+            ${limit.toFixed(2)}/wk
+          </span>
         </div>
         <input
           type="range"
@@ -154,9 +189,12 @@ function AgentOnboarding({ userId, onDone }: { userId: string; onDone: () => voi
           step={1}
           value={limit}
           onChange={(e) => setLimit(Number(e.target.value))}
-          className="w-full accent-[var(--color-gold)]"
+          className="w-full accent-(--color-gold)"
         />
-        <p className="text-xs text-[var(--color-muted)]">≈ {estLow}–{estHigh} chapters/week. Unspent budget stays in your balance.</p>
+        <p className="text-xs text-muted">
+          ≈ {estLow}–{estHigh} chapters/week. Unspent budget stays in your
+          balance.
+        </p>
       </div>
 
       <button disabled={busy} onClick={start} className="btn-coin w-full">
@@ -166,7 +204,15 @@ function AgentOnboarding({ userId, onDone }: { userId: string; onDone: () => voi
   );
 }
 
-function AgentConsole({ userId, config, onConfig }: { userId: string; config: AgentConfig; onConfig: () => void }) {
+function AgentConsole({
+  userId,
+  config,
+  onConfig,
+}: {
+  userId: string;
+  config: AgentConfig;
+  onConfig: () => void;
+}) {
   const [feed, setFeed] = useState<FeedMsg[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -195,7 +241,20 @@ function AgentConsole({ userId, config, onConfig }: { userId: string; config: Ag
     if (!msg) return;
     setInput("");
     setSending(true);
-    setFeed((f) => [...f, { id: `tmp-${Date.now()}`, created_at: new Date().toISOString(), sender: "reader", kind: "message", content: msg, seriesId: null, chapterId: null, amount: null, ref: null }]);
+    setFeed((f) => [
+      ...f,
+      {
+        id: `tmp-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        sender: "reader",
+        kind: "message",
+        content: msg,
+        seriesId: null,
+        chapterId: null,
+        amount: null,
+        ref: null,
+      },
+    ]);
     try {
       await fetch("/api/agent/chat", {
         method: "POST",
@@ -211,7 +270,11 @@ function AgentConsole({ userId, config, onConfig }: { userId: string; config: Ag
   async function run() {
     setRunning(true);
     try {
-      await fetch("/api/agent/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) });
+      await fetch("/api/agent/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
       loadFeed();
       onConfig();
     } finally {
@@ -229,34 +292,61 @@ function AgentConsole({ userId, config, onConfig }: { userId: string; config: Ag
     loadFeed();
   }
 
-  const pct = config.weeklyLimit > 0 ? Math.min(100, (config.weeklySpent / config.weeklyLimit) * 100) : 0;
+  const pct =
+    config.weeklyLimit > 0
+      ? Math.min(100, (config.weeklySpent / config.weeklyLimit) * 100)
+      : 0;
 
   return (
     <div className="space-y-4">
       {/* Status bar */}
       <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
         <div className="flex items-center justify-between">
-          <span className="text-utility inline-flex items-center gap-1.5 text-[var(--color-muted)]">
-            <span className={`h-1.5 w-1.5 rounded-full ${config.paused ? "bg-[var(--color-muted)]" : "bg-[var(--color-accent-2)] pulse-dot"}`} />
+          <span className="text-utility inline-flex items-center gap-1.5 text-muted">
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${config.paused ? "bg-[var(--color-muted)]" : "bg-[var(--color-accent-2)] pulse-dot"}`}
+            />
             {config.paused ? "Paused" : "Active"}
           </span>
-          <span className="tabular text-sm text-[var(--color-muted)]">
-            <span className="font-semibold text-[var(--color-gold)]">${config.walletBalance.toFixed(2)}</span> in wallet · ${config.weeklySpent.toFixed(2)} spent / ${config.weeklyLimit.toFixed(2)}
+          <span className="tabular text-sm text-muted">
+            <span className="font-semibold text-[var(--color-gold)]">
+              ${(config.onchainBalance ?? config.walletBalance).toFixed(2)}
+            </span>{" "}
+            {config.onchainBalance != null ? "on Arc" : "in wallet"} · ${config.weeklySpent.toFixed(2)} spent / $
+            {config.weeklyLimit.toFixed(2)}
           </span>
         </div>
         <div className="mt-2 h-1.5 w-full bg-[var(--color-surface-2)]">
-          <div className="h-full bg-[var(--color-gold)]" style={{ width: `${pct}%` }} />
+          <div
+            className="h-full bg-[var(--color-gold)]"
+            style={{ width: `${pct}%` }}
+          />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button disabled={running || config.paused} onClick={run} className="btn-coin !py-2 !text-[0.72rem]">
+          <button
+            disabled={running || config.paused}
+            onClick={run}
+            className="btn-coin !py-2 !text-[0.72rem]"
+          >
             <Play size={13} /> {running ? "Running…" : "Run now"}
           </button>
-          <button onClick={togglePause} className="btn-outline !py-2 !text-[0.72rem]">
-            {config.paused ? <Play size={13} /> : <Pause size={13} />} {config.paused ? "Resume" : "Pause"}
+          <button
+            onClick={togglePause}
+            className="btn-outline !py-2 !text-[0.72rem]"
+          >
+            {config.paused ? <Play size={13} /> : <Pause size={13} />}{" "}
+            {config.paused ? "Resume" : "Pause"}
           </button>
           {config.walletAddress && (
-            <a href={`${ARC_EXPLORER}/address/${config.walletAddress}`} target="_blank" rel="noreferrer" className="text-utility ml-auto inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-gold)]" title={config.walletAddress}>
-              <Coins size={12} /> {config.walletAddress.slice(0, 6)}…{config.walletAddress.slice(-4)} <ExternalLink size={11} />
+            <a
+              href={`${ARC_EXPLORER}/address/${config.walletAddress}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-utility ml-auto inline-flex items-center gap-1 text-muted hover:text-[var(--color-gold)]"
+              title={config.walletAddress}
+            >
+              <Coins size={12} /> {config.walletAddress.slice(0, 6)}…
+              {config.walletAddress.slice(-4)} <ExternalLink size={11} />
             </a>
           )}
         </div>
@@ -265,17 +355,35 @@ function AgentConsole({ userId, config, onConfig }: { userId: string; config: Ag
       {/* All-time spending overview */}
       {config.stats && (
         <div className="grid grid-cols-2 gap-px border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
-          <AgentStat label="Funded all-time" value={`$${config.stats.totalFunded.toFixed(2)}`} />
-          <AgentStat label="Spent all-time" value={`$${config.stats.totalSpent.toFixed(2)}`} accent />
-          <AgentStat label="Chapters read" value={`${config.stats.chaptersRead}`} />
-          <AgentStat label="In wallet now" value={`$${config.walletBalance.toFixed(2)}`} />
+          <AgentStat
+            label="Funded all-time"
+            value={`$${config.stats.totalFunded.toFixed(2)}`}
+          />
+          <AgentStat
+            label="Spent all-time"
+            value={`$${config.stats.totalSpent.toFixed(2)}`}
+            accent
+          />
+          <AgentStat
+            label="Chapters read"
+            value={`${config.stats.chaptersRead}`}
+          />
+          <AgentStat
+            label={config.onchainBalance != null ? "On Arc now" : "In wallet now"}
+            value={`$${(config.onchainBalance ?? config.walletBalance).toFixed(2)}`}
+          />
         </div>
       )}
 
       {/* Feed */}
-      <div ref={scroller} className="max-h-[55vh] space-y-3 overflow-y-auto scrollbar-thin border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
+      <div
+        ref={scroller}
+        className="max-h-[55vh] space-y-3 overflow-y-auto scrollbar-thin border border-[var(--color-border)] bg-[var(--color-bg)] p-4"
+      >
         {feed.length === 0 ? (
-          <p className="py-8 text-center text-sm text-[var(--color-muted)]">No activity yet — hit “Run now” and watch.</p>
+          <p className="py-8 text-center text-sm text-muted">
+            No activity yet — hit “Run now” and watch.
+          </p>
         ) : (
           feed.map((m) => <FeedItem key={m.id} m={m} />)
         )}
@@ -295,7 +403,10 @@ function AgentConsole({ userId, config, onConfig }: { userId: string; config: Ag
           placeholder="Message your agent — “what are you reading?”"
           className="charon-input flex-1"
         />
-        <button disabled={sending || !input.trim()} className="btn-coin shrink-0 !px-4">
+        <button
+          disabled={sending || !input.trim()}
+          className="btn-coin shrink-0 !px-4"
+        >
           <Send size={15} />
         </button>
       </form>
@@ -307,7 +418,9 @@ function FeedItem({ m }: { m: FeedMsg }) {
   if (m.sender === "reader") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2.5 text-sm">{m.content}</div>
+        <div className="max-w-[80%] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2.5 text-sm">
+          {m.content}
+        </div>
       </div>
     );
   }
@@ -321,7 +434,8 @@ function FeedItem({ m }: { m: FeedMsg }) {
         <p className="text-sm leading-relaxed">{m.content}</p>
         {isPayment && (
           <p className="text-utility mt-1.5 inline-flex items-center gap-1.5 text-[var(--color-accent-2)]">
-            <Coins size={11} /> ${m.amount!.toFixed(2)} · agent-paid{m.ref ? ` · ref ${m.ref.slice(0, 8)}` : ""}
+            <Coins size={11} /> ${m.amount!.toFixed(2)} · agent-paid
+            {m.ref ? ` · ref ${m.ref.slice(0, 8)}` : ""}
           </p>
         )}
       </div>
@@ -329,11 +443,23 @@ function FeedItem({ m }: { m: FeedMsg }) {
   );
 }
 
-function AgentStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function AgentStat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
   return (
     <div className="bg-[var(--color-surface)] px-4 py-4">
-      <p className="text-utility text-[var(--color-muted)]">{label}</p>
-      <p className={`tabular mt-1 text-xl font-semibold ${accent ? "text-[var(--color-gold)]" : ""}`}>{value}</p>
+      <p className="text-utility text-muted">{label}</p>
+      <p
+        className={`tabular mt-1 text-xl font-semibold ${accent ? "text-[var(--color-gold)]" : ""}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }

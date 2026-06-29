@@ -23,7 +23,7 @@ import {
   updateAgentConfig,
 } from "@/lib/db";
 import { settleSession, unlockSeries, MIN_SETTLE } from "@/lib/payments";
-import { ensureGatewayBalance } from "@/lib/payer";
+import { fundAgentWalletOnchain, returnAgentWalletOnchain } from "@/lib/agent-wallet";
 import type { Series, TasteProfile } from "@/lib/supabase";
 
 const WEEK_MS = 7 * 86_400_000;
@@ -93,6 +93,15 @@ export async function runAgent(userId: string): Promise<RunResult> {
   // ── Week reset: return the unspent to the reader, then start a fresh week. ──
   if (Date.now() - new Date(config.week_start).getTime() > WEEK_MS) {
     if (walletBalance > 0.001) {
+      // Pull the real USDC back from the agent's wallet to the treasury (best-effort)…
+      if (config.agent_wallet_pk && process.env.TREASURY_WALLET_ADDRESS) {
+        try {
+          await returnAgentWalletOnchain(config.agent_wallet_pk, process.env.TREASURY_WALLET_ADDRESS, walletBalance);
+        } catch (e) {
+          console.warn("[charon] agent on-chain return:", (e as Error).message);
+        }
+      }
+      // …and credit it back to the reader's ledger balance.
       await adjustUserBalance(userId, walletBalance, "agent_return");
       await addAgentMessage({ userId, sender: "agent", kind: "budget", content: `New week — returned $${walletBalance.toFixed(2)} of unspent budget to your balance.` });
     }
@@ -112,15 +121,27 @@ export async function runAgent(userId: string): Promise<RunResult> {
     await adjustUserBalance(userId, -fund, "agent_fund");
     walletBalance = fund;
     await updateAgentConfig(userId, { wallet_balance_usdc: walletBalance, week_funded_usdc: (Number(config.week_funded_usdc) || 0) + fund });
-    // Best-effort: top up the agent wallet's standing on-chain Gateway deposit.
-    if (config.agent_wallet_pk) {
+
+    // Move REAL USDC into the agent's own wallet on Arc (best-effort) so it
+    // genuinely holds — and you can scan — the funds. Ledger accounting above is
+    // authoritative; a failed transfer never blocks the run.
+    let onchain = false;
+    if (config.agent_wallet_address) {
       try {
-        await ensureGatewayBalance(config.agent_wallet_pk, "1");
+        await fundAgentWalletOnchain(config.agent_wallet_address, fund);
+        onchain = true;
       } catch (e) {
-        console.warn("[charon] agent wallet gateway top-up:", (e as Error).message);
+        console.warn("[charon] agent on-chain funding:", (e as Error).message);
       }
     }
-    await addAgentMessage({ userId, sender: "agent", kind: "budget", content: `Loaded $${fund.toFixed(2)} into my wallet for the week. Let's find something good.` });
+    await addAgentMessage({
+      userId,
+      sender: "agent",
+      kind: "budget",
+      content: onchain
+        ? `Loaded $${fund.toFixed(2)} of real USDC into my wallet on Arc — scan my address to see it. Let's find something good.`
+        : `Loaded $${fund.toFixed(2)} into my wallet for the week. Let's find something good.`,
+    });
   }
   let remaining = walletBalance;
 

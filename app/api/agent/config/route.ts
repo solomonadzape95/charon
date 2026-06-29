@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { addAgentMessage, getAgentConfig, getAgentSpendStats, getUserById, upsertAgentConfig } from "@/lib/db";
 import { buildTasteProfile } from "@/lib/agents/reader-agent";
+import { getOnchainUsdc } from "@/lib/agent-wallet";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -30,7 +31,18 @@ export async function GET(req: NextRequest) {
   const base = shape(config);
   if (!base) return NextResponse.json({ config: null });
   const stats = await getAgentSpendStats(userId);
-  return NextResponse.json({ config: { ...base, stats } });
+
+  // Real native-USDC balance held by the agent's wallet on Arc (best-effort).
+  let onchainBalance: number | null = null;
+  if (config!.agent_wallet_address) {
+    try {
+      onchainBalance = await getOnchainUsdc(config!.agent_wallet_address);
+    } catch {
+      /* RPC unavailable — fall back to the ledger budget in the UI */
+    }
+  }
+
+  return NextResponse.json({ config: { ...base, stats, onchainBalance } });
 }
 
 /** Set up (or reconfigure) the agent. */

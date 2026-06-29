@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Receipt } from "lucide-react";
+import { ChevronLeft, ChevronRight, Receipt, Sparkles, ArrowRight } from "lucide-react";
 import { AccountNav } from "@/components/AccountNav";
 import { DepositPanel } from "@/components/DepositPanel";
 import { GiftPanel } from "@/components/GiftPanel";
@@ -12,6 +13,7 @@ interface WalletData {
   balance: number;
   deposited: number;
   spent: number;
+  agentWallet: { balance: number; funded: number } | null;
   ledger: { kind: string; amount: number; created_at: string }[];
 }
 
@@ -94,6 +96,29 @@ export default function WalletPage() {
             {w === null ? <SkeletonBlock className="mt-2 h-6 w-16" /> : <p className="tabular mt-1 text-2xl">${w.spent.toFixed(2)}</p>}
           </div>
         </div>
+
+        {/* Reading agent wallet — where money you funded the agent with now sits */}
+        {w?.agentWallet && (w.agentWallet.balance > 0 || w.agentWallet.funded > 0) && (
+          <Link
+            href="/agent"
+            className="flex items-center justify-between gap-4 border border-[color-mix(in_srgb,var(--color-gold)_30%,var(--color-border))] bg-[var(--color-surface)] p-5 transition-colors hover:border-[var(--color-gold)]"
+          >
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-gold)_14%,transparent)] text-[var(--color-gold)]">
+                <Sparkles size={18} />
+              </span>
+              <div>
+                <p className="font-medium">Reading agent wallet</p>
+                <p className="text-xs text-[var(--color-muted)]">
+                  ${w.agentWallet.funded.toFixed(2)} funded this week — the agent spends this on your behalf.
+                </p>
+              </div>
+            </div>
+            <span className="tabular shrink-0 text-xl font-bold text-[var(--color-gold)]">
+              ${w.agentWallet.balance.toFixed(2)} <ArrowRight size={14} className="inline" />
+            </span>
+          </Link>
+        )}
 
         <section className="space-y-3">
           <h2 className="font-display text-2xl font-semibold">Transactions</h2>
