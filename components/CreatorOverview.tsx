@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { Upload, ArrowUpRight, Plus } from "lucide-react";
 import { supabaseAnon } from "@/lib/supabase";
 import { coverFor } from "@/lib/covers";
+import { StudioSkeleton } from "@/components/Skeletons";
 
 interface Earnings {
   creator: { id: string; name: string | null; balance_usd: number; total_earned_usdc: number; wallet_address: string | null };
-  series: { id: string; title: string; status: string }[];
+  series: { id: string; title: string; status: string; cover_image: string | null }[];
   payments: { id: string; amount: number; chapter: string | null; tx: string | null; created_at: string }[];
 }
 interface Analytics {
@@ -85,7 +86,7 @@ export function CreatorOverview({ creatorId }: { creatorId: string }) {
     }
   }
 
-  if (!data) return null;
+  if (!data) return <StudioSkeleton />;
 
   const today = sumSince(data.payments, DAY);
   const week = sumSince(data.payments, 7 * DAY);
@@ -191,7 +192,7 @@ export function CreatorOverview({ creatorId }: { creatorId: string }) {
               return (
                 <div key={s.id} className="flex gap-5 border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={coverFor(s.id)} alt="" className="h-44 w-32 shrink-0 object-cover grayscale-[0.15]" />
+                  <img src={coverFor(s.id, s.cover_image)} alt="" className="h-44 w-32 shrink-0 object-cover grayscale-[0.15]" />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-utility text-[var(--color-muted)]">{s.status}</span>

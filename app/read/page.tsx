@@ -1,15 +1,16 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { TrendingUp, Sparkles, Info, Search, Star } from "lucide-react";
+import { TrendingUp, Sparkles, Info, Search, ChevronLeft, ChevronRight, Users, BookText } from "lucide-react";
 import { coverFor } from "@/lib/covers";
 import { getLast } from "@/lib/reading";
 import { AccountNav } from "@/components/AccountNav";
 import { Loading } from "@/components/Loading";
+import { useCachedFetch } from "@/lib/use-cached-fetch";
 
-const BROWSE_PAGE = 12; // infinite-scroll chunk size
+const PAGE_SIZE = 12;
 
 export default function DiscoveryPage() {
   return (
@@ -40,7 +41,7 @@ interface Library {
 }
 
 const MODE_LABEL: Record<string, string> = {
-  standard: "Following",
+  standard: "In library",
   pre_release: "Pre-release",
   series_unlock: "Unlocked",
 };
@@ -52,45 +53,29 @@ const SORTS: { id: SortKey; label: string }[] = [
   { id: "new", label: "Newest" },
 ];
 
-// A community rating derived from real engagement (completion rate).
-function ratingFor(s: Series): number {
-  const r = 3.7 + Number(s.avg_completion_rate || 0.6) * 1.25;
-  return Math.min(4.95, Math.max(3.5, Math.round(r * 100) / 100));
+/** Genres are a comma-separated tag list — split them everywhere. */
+function genresOf(s: Series): string[] {
+  return (s.genre ?? "").split(",").map((g) => g.trim()).filter(Boolean);
 }
 
 function Discovery() {
   const sp = useSearchParams();
   const urlQ = sp.get("q") ?? "";
-  const [series, setSeries] = useState<Series[]>([]);
-  const [lib, setLib] = useState<Library | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [loaded, setLoaded] = useState(false);
   const [genre, setGenre] = useState<string>("all");
   const [sort, setSort] = useState<SortKey>("trending");
   const [query, setQuery] = useState(urlQ);
-  const [visible, setVisible] = useState(BROWSE_PAGE);
-  const sentinel = useRef<HTMLDivElement | null>(null);
+  const [page, setPage] = useState(1);
 
-  // React to the header search (which navigates to /read?q=…).
-  useEffect(() => {
-    setQuery(urlQ);
-  }, [urlQ]);
+  // Cached: re-visiting Discover paints instantly, then revalidates.
+  const { data: seriesData, loading } = useCachedFetch<{ series: Series[] }>("/api/series?limit=200", "series:all");
+  const series = useMemo(() => seriesData?.series ?? [], [seriesData]);
+  const { data: lib } = useCachedFetch<Library>(userId ? `/api/me/library?userId=${userId}` : null, `library:${userId ?? "anon"}`);
 
   useEffect(() => {
-    const id = typeof window !== "undefined" ? localStorage.getItem("charon_user_id") : null;
-    setUserId(id);
-    fetch("/api/series?limit=200")
-      .then((r) => r.json())
-      .then((d) => setSeries(d.series ?? []))
-      .catch(() => {})
-      .finally(() => setLoaded(true));
-    if (id) {
-      fetch(`/api/me/library?userId=${id}`)
-        .then((r) => r.json())
-        .then(setLib)
-        .catch(() => {});
-    }
+    setUserId(typeof window !== "undefined" ? localStorage.getItem("charon_user_id") : null);
   }, []);
+  useEffect(() => setQuery(urlQ), [urlQ]);
 
   const byId = useMemo(() => new Map(series.map((s) => [s.id, s])), [series]);
 
@@ -103,20 +88,20 @@ function Discovery() {
   }, [lib, byId]);
 
   const startedIds = useMemo(() => new Set(continueReading.map((c) => c.id)), [continueReading]);
-  const trending = series.slice(0, 8);
+  const trending = useMemo(() => [...series].sort((a, b) => b.momentum_score - a.momentum_score).slice(0, 8), [series]);
 
   const recommended = useMemo(() => {
-    const readGenres = new Set(continueReading.map((c) => c.meta?.genre).filter(Boolean) as string[]);
+    const readGenres = new Set(continueReading.flatMap((c) => (c.meta ? genresOf(c.meta) : [])));
     const pool = series.filter((s) => !startedIds.has(s.id));
-    const matched = pool.filter((s) => s.genre && readGenres.has(s.genre));
+    const matched = pool.filter((s) => genresOf(s).some((g) => readGenres.has(g)));
     return (matched.length ? matched : pool).slice(0, 4);
   }, [series, continueReading, startedIds]);
 
-  const genres = useMemo(() => [...new Set(series.map((s) => s.genre).filter(Boolean) as string[])].sort(), [series]);
+  const genres = useMemo(() => [...new Set(series.flatMap(genresOf))].sort(), [series]);
 
   const browse = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = genre === "all" ? series : series.filter((s) => s.genre === genre);
+    let list = genre === "all" ? series : series.filter((s) => genresOf(s).some((g) => g.toLowerCase() === genre.toLowerCase()));
     if (q) list = list.filter((s) => (s.title + " " + (s.description ?? "") + " " + (s.genre ?? "")).toLowerCase().includes(q));
     list = [...list];
     if (sort === "trending") list.sort((a, b) => b.momentum_score - a.momentum_score);
@@ -127,25 +112,10 @@ function Discovery() {
 
   const searching = query.trim().length > 0;
 
-  // Infinite scroll: reset the window when filters change, grow it as the sentinel appears.
-  useEffect(() => {
-    setVisible(BROWSE_PAGE);
-  }, [genre, sort, query]);
-
-  useEffect(() => {
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) setVisible((v) => (v < browse.length ? v + BROWSE_PAGE : v));
-      },
-      { rootMargin: "400px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [browse.length]);
-
-  const shown = browse.slice(0, visible);
+  useEffect(() => setPage(1), [genre, sort, query]);
+  const totalPages = Math.max(1, Math.ceil(browse.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageItems = browse.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <>
@@ -156,25 +126,25 @@ function Discovery() {
             <h1 className="font-display display-md font-semibold">Discover</h1>
             <p className="mt-1 text-[var(--color-muted)]">Read anything. Value flows to creators automatically after each session.</p>
           </div>
-          <SearchBox value={query} onChange={setQuery} />
+          {/* <SearchBox value={query} onChange={setQuery} /> */}
         </div>
 
-        {/* When searching, show only results */}
-        {searching ? (
+        {loading && series.length === 0 ? (
+          <PosterGridSkeleton />
+        ) : searching ? (
           <section className="space-y-5">
             <SectionHead title={`Results for “${query.trim()}”`} />
             {browse.length === 0 ? (
               <p className="text-sm text-[var(--color-muted)]">No series match that search.</p>
             ) : (
               <>
-                <BrowseList items={shown} />
-                {visible < browse.length && <div ref={sentinel} className="h-10" />}
+                <BrowseList items={pageItems} />
+                <Pagination page={safePage} totalPages={totalPages} onPage={setPage} total={browse.length} />
               </>
             )}
           </section>
         ) : (
           <>
-            {/* Continue reading */}
             {continueReading.length > 0 && (
               <section className="space-y-6">
                 <SectionHead title="Continue reading" />
@@ -211,27 +181,23 @@ function Discovery() {
               </section>
             )}
 
-            {/* Trending */}
             <section className="space-y-6">
               <SectionHead
                 title="Trending this week"
                 icon={TrendingUp}
                 note="Ranked by genuine reader engagement — session depth & completion. Never paid placement."
               />
-              {!loaded ? (
-                <p className="text-sm text-[var(--color-muted)]">Loading…</p>
-              ) : trending.length === 0 ? (
+              {trending.length === 0 ? (
                 <EmptyState />
               ) : (
                 <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
                   {trending.map((s, i) => (
-                    <Poster key={s.id} s={s} rank={i + 1} showDesc showRating />
+                    <Poster key={s.id} s={s} rank={i + 1} showDesc showStats />
                   ))}
                 </div>
               )}
             </section>
 
-            {/* Recommended */}
             {recommended.length > 0 && (
               <section className="space-y-6">
                 <SectionHead
@@ -241,23 +207,20 @@ function Discovery() {
                 />
                 <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
                   {recommended.map((s) => (
-                    <Poster key={s.id} s={s} showDesc showRating />
+                    <Poster key={s.id} s={s} showDesc showStats />
                   ))}
                 </div>
               </section>
             )}
 
-            {/* Browse all — filter + sort, detailed list */}
             {series.length > 0 && (
               <section className="space-y-6">
-                <SectionHead title="Browse all" />
+                <SectionHead title="Browse all" note={`${browse.length} series`} />
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap gap-1.5">
-                    <FilterChip active={genre === "all"} onClick={() => setGenre("all")}>
-                      All
-                    </FilterChip>
+                    <FilterChip active={genre === "all"} onClick={() => setGenre("all")}>All</FilterChip>
                     {genres.map((g) => (
-                      <FilterChip key={g} active={genre === g} onClick={() => setGenre(g)}>
+                      <FilterChip key={g} active={genre.toLowerCase() === g.toLowerCase()} onClick={() => setGenre(g)}>
                         {g}
                       </FilterChip>
                     ))}
@@ -270,9 +233,7 @@ function Discovery() {
                       className="border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-utility text-[var(--color-ink)] outline-none"
                     >
                       {SORTS.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.label}
-                        </option>
+                        <option key={s.id} value={s.id}>{s.label}</option>
                       ))}
                     </select>
                   </div>
@@ -281,14 +242,8 @@ function Discovery() {
                   <p className="text-sm text-[var(--color-muted)]">Nothing in this genre yet.</p>
                 ) : (
                   <>
-                    <BrowseList items={shown} />
-                    {visible < browse.length ? (
-                      <div ref={sentinel} className="grid place-items-center py-6 text-utility text-[var(--color-muted)]">
-                        Loading more…
-                      </div>
-                    ) : (
-                      <p className="py-4 text-center text-utility text-[var(--color-muted)]">{browse.length} series · that&apos;s everything</p>
-                    )}
+                    <BrowseList items={pageItems} />
+                    <Pagination page={safePage} totalPages={totalPages} onPage={setPage} total={browse.length} />
                   </>
                 )}
               </section>
@@ -296,12 +251,9 @@ function Discovery() {
           </>
         )}
 
-        {!userId && loaded && (
+        {!userId && !loading && (
           <p className="text-sm text-[var(--color-muted)]">
-            <Link href="/join" className="text-[var(--color-gold)]">
-              Sign in
-            </Link>{" "}
-            to see what you&apos;re reading and get personal recommendations.
+            <Link href="/join" className="text-[var(--color-gold)]">Sign in</Link> to see what you&apos;re reading and get personal recommendations.
           </p>
         )}
       </div>
@@ -309,7 +261,7 @@ function Discovery() {
   );
 }
 
-/* ── Poster (cover-forward card with optional blurb + rating) ── */
+/* ── Poster (cover-forward card) ── */
 function Poster({
   s,
   fallbackId,
@@ -318,7 +270,7 @@ function Poster({
   badge,
   highlight,
   showDesc,
-  showRating,
+  showStats,
   footer,
   href,
 }: {
@@ -329,12 +281,13 @@ function Poster({
   badge?: string;
   highlight?: boolean;
   showDesc?: boolean;
-  showRating?: boolean;
+  showStats?: boolean;
   footer?: React.ReactNode;
   href?: string;
 }) {
   const id = s?.id ?? fallbackId!;
   const title = s?.title ?? fallbackTitle ?? "";
+  const primary = s ? genresOf(s)[0] : undefined;
   return (
     <Link href={href ?? `/series/${s?.slug ?? id}`} className="group block">
       <div
@@ -358,8 +311,12 @@ function Poster({
       </div>
       <div className="mt-3">
         <div className="flex items-center justify-between gap-2">
-          {s?.genre && <span className="text-utility text-[var(--color-muted)]">{s.genre}</span>}
-          {showRating && s && <Rating value={ratingFor(s)} />}
+          {primary && <span className="text-utility text-[var(--color-muted)]">{primary}</span>}
+          {showStats && s && (
+            <span className="text-utility inline-flex items-center gap-1 text-[var(--color-muted)]">
+              <Users size={11} /> {s.follower_count.toLocaleString()}
+            </span>
+          )}
         </div>
         <h3 className="font-display mt-0.5 text-lg font-semibold leading-tight group-hover:text-[var(--color-gold)]">{title}</h3>
         {showDesc && s?.description && <p className="clamp-2 mt-1 text-sm leading-snug text-[var(--color-muted)]">{s.description}</p>}
@@ -369,55 +326,105 @@ function Poster({
   );
 }
 
-/* ── Browse list (cover left, detail right — like a catalog) ── */
+/* ── Browse list (catalog row) — real stats only ── */
 function BrowseList({ items }: { items: Series[] }) {
   return (
     <div className="grid gap-px border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-2">
-      {items.map((s) => (
-        <Link key={s.id} href={`/series/${s.slug ?? s.id}`} className="group flex gap-4 bg-[var(--color-bg)] p-4 transition-colors hover:bg-[var(--color-surface)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={coverFor(s.id, s.cover_image)}
-            alt={s.title}
-            className="h-32 w-[5.5rem] shrink-0 border border-[var(--color-border)] object-cover grayscale-[0.15]"
-          />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {s.genre && <span className="text-utility text-[var(--color-gold)]">#{s.genre}</span>}
-              {s.status === "completed" && <span className="text-utility text-[var(--color-accent-2)]">· completed</span>}
+      {items.map((s) => {
+        const tags = genresOf(s);
+        return (
+          <Link key={s.id} href={`/series/${s.slug ?? s.id}`} className="group flex gap-4 bg-[var(--color-bg)] p-4 transition-colors hover:bg-[var(--color-surface)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={coverFor(s.id, s.cover_image)}
+              alt={s.title}
+              className="h-32 w-[5.5rem] shrink-0 border border-[var(--color-border)] object-cover grayscale-[0.15]"
+            />
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {tags.slice(0, 3).map((t) => (
+                  <span key={t} className="text-utility text-[var(--color-gold)]">#{t}</span>
+                ))}
+                {s.status === "completed" && <span className="text-utility text-[var(--color-accent-2)]">· completed</span>}
+              </div>
+              <h3 className="font-display mt-1 text-lg font-semibold leading-tight group-hover:text-[var(--color-gold)]">{s.title}</h3>
+              {s.description && <p className="clamp-2 mt-1 text-sm leading-snug text-[var(--color-muted)]">{s.description}</p>}
+              <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 text-sm text-[var(--color-muted)]">
+                <span className="tabular inline-flex items-center gap-1"><BookText size={12} /> {s.chapter_count ?? 0} ch</span>
+                <span className="tabular inline-flex items-center gap-1"><Users size={12} /> {s.follower_count.toLocaleString()}</span>
+                {s.avg_completion_rate > 0 && <span className="tabular">{Math.round(Number(s.avg_completion_rate) * 100)}% finish</span>}
+              </div>
             </div>
-            <h3 className="font-display mt-1 text-lg font-semibold leading-tight group-hover:text-[var(--color-gold)]">{s.title}</h3>
-            {s.description && <p className="clamp-2 mt-1 text-sm leading-snug text-[var(--color-muted)]">{s.description}</p>}
-            <div className="mt-auto flex items-center gap-4 pt-2 text-sm text-[var(--color-muted)]">
-              <Rating value={ratingFor(s)} />
-              <span className="tabular">{(s.chapter_count ?? 0)} ch</span>
-              <span className="tabular">{s.follower_count.toLocaleString()} readers</span>
-            </div>
-          </div>
-        </Link>
-      ))}
+          </Link>
+        );
+      })}
     </div>
   );
 }
 
-function Rating({ value }: { value: number }) {
+function Pagination({ page, totalPages, onPage, total }: { page: number; totalPages: number; onPage: (p: number) => void; total: number }) {
+  if (totalPages <= 1) return <p className="py-2 text-center text-utility text-[var(--color-muted)]">{total} series</p>;
+  const nums = pageNumbers(page, totalPages);
   return (
-    <span className="inline-flex items-center gap-1 text-sm">
-      <Star size={13} className="fill-[var(--color-gold)] text-[var(--color-gold)]" />
-      <span className="tabular text-[var(--color-ink)]">{value.toFixed(2)}</span>
-    </span>
+    <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2">
+      <PageBtn disabled={page <= 1} onClick={() => onPage(page - 1)} aria="Previous page"><ChevronLeft size={15} /></PageBtn>
+      {nums.map((n, i) =>
+        n === "…" ? (
+          <span key={`e${i}`} className="px-1 text-utility text-[var(--color-muted)]">…</span>
+        ) : (
+          <button
+            key={n}
+            onClick={() => onPage(n)}
+            aria-current={n === page ? "page" : undefined}
+            className={`tabular min-w-9 rounded-full border px-3 py-1.5 text-sm transition-colors ${
+              n === page ? "border-[var(--color-gold)] bg-[var(--color-gold)] text-black" : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-muted)] hover:text-[var(--color-ink)]"
+            }`}
+          >
+            {n}
+          </button>
+        ),
+      )}
+      <PageBtn disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria="Next page"><ChevronRight size={15} /></PageBtn>
+    </div>
   );
+}
+
+function PageBtn({ disabled, onClick, children, aria }: { disabled: boolean; onClick: () => void; children: React.ReactNode; aria: string }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={aria}
+      className="grid h-9 w-9 place-items-center rounded-full border border-[var(--color-border)] text-[var(--color-muted)] transition-colors hover:border-[var(--color-gold)] hover:text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-35"
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Compact page list: 1 … 4 5 [6] 7 8 … 20 */
+function pageNumbers(page: number, total: number): (number | "…")[] {
+  const out: (number | "…")[] = [];
+  const add = (n: number) => out.push(n);
+  const range = (a: number, b: number) => { for (let i = a; i <= b; i++) add(i); };
+  if (total <= 7) { range(1, total); return out; }
+  add(1);
+  if (page > 4) out.push("…");
+  range(Math.max(2, page - 1), Math.min(total - 1, page + 1));
+  if (page < total - 3) out.push("…");
+  add(total);
+  return out;
 }
 
 function SearchBox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div className="relative w-full sm:w-96">
-      <Search size={16} strokeWidth={1.75} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] mr-3" />
+      <Search size={16} strokeWidth={1.75} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]" />
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search series, genres…"
-        className="charon-input rounded-full pl-20"
+        className="charon-input rounded-full pl-12"
       />
     </div>
   );
@@ -454,13 +461,28 @@ function SectionHead({ title, icon: Icon, note }: { title: string; icon?: typeof
   );
 }
 
+function PosterGridSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="h-7 w-48 animate-pulse bg-[var(--color-surface)]" />
+      <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="space-y-3">
+            <div className="aspect-[2/3] w-full animate-pulse bg-[var(--color-surface)]" />
+            <div className="h-3 w-1/2 animate-pulse bg-[var(--color-surface)]" />
+            <div className="h-4 w-3/4 animate-pulse bg-[var(--color-surface)]" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function EmptyState() {
   return (
     <p className="text-sm text-[var(--color-muted)]">
       No series yet.{" "}
-      <Link href="/creator" className="text-[var(--color-gold)]">
-        Publish the first one →
-      </Link>
+      <Link href="/creator" className="text-[var(--color-gold)]">Publish the first one →</Link>
     </p>
   );
 }

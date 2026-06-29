@@ -55,5 +55,5 @@ export async function GET() {
       amount: Number(s.amount_settled_usdc),
       created_at: s.created_at,
     })),
-  });
+  }, { headers: { "Cache-Control": "public, max-age=10, stale-while-revalidate=60" } });
 }

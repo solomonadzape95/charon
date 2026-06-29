@@ -1,9 +1,11 @@
 /**
- * Deterministic cover art. We don't store per-series uploads in the demo, so a
- * series' id maps stably to one of the bundled editorial plates in /public/hero.
- * Same series → same cover, every render.
+ * Deterministic cover art. When a series has no uploaded cover, its id maps
+ * stably to one of the bundled novel covers in /public/covers. Same series →
+ * same cover, every render.
  */
-const COVERS = Array.from({ length: 10 }, (_, i) => `/hero/${String(i + 1).padStart(2, "0")}-edited.jpg`);
+import { HERO_COVERS } from "@/lib/hero-covers";
+
+const COVERS = HERO_COVERS.map((c) => c.cover);
 
 export function coverFor(id: string, override?: string | null): string {
   if (override) return override;
