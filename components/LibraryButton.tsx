@@ -35,11 +35,12 @@ export function LibraryButton({ seriesId }: { seriesId: string }) {
   const locked = mode === "series_unlock" || mode === "pre_release";
 
   async function toggle() {
+    // Ignore clicks before we know the follow state (avoids overwriting a pass).
+    if (!ready || busy || locked) return;
     if (!userId) {
       router.push("/join");
       return;
     }
-    if (locked) return;
     setBusy(true);
     const next = inLibrary ? null : "standard";
     setMode(next); // optimistic
@@ -61,7 +62,7 @@ export function LibraryButton({ seriesId }: { seriesId: string }) {
   return (
     <button
       onClick={toggle}
-      disabled={busy || !ready || locked}
+      disabled={busy || locked}
       aria-pressed={inLibrary}
       title={locked ? "Managed by your pass / pre-release" : undefined}
       className={`${inLibrary ? "btn-outline" : "btn-coin"} ${locked ? "cursor-default opacity-90" : ""}`}
