@@ -75,6 +75,8 @@ export interface SettleSessionArgs {
   feeBps?: number;
   /** Who initiated this payment — a human reader or their autonomous agent. */
   callerType?: "human" | "agent";
+  /** Skip debiting the reader's ledger — used when the agent already paid from its own funded wallet. */
+  skipReaderDebit?: boolean;
 }
 
 export interface SettleResult {
@@ -117,11 +119,14 @@ export async function settleSession(args: SettleSessionArgs): Promise<SettleResu
   });
 
   // 1. Debit the reader's ledger by the gross (throws on insufficient balance).
-  try {
-    await adjustUserBalance(userId, -grossUsdc, args.debitKind ?? "session_debit", payment.id);
-  } catch (e) {
-    await updatePayment(payment.id, { status: "failed" });
-    return { paymentId: payment.id, status: "failed", reason: (e as Error).message };
+  //    Skipped when the agent already paid from its own funded wallet.
+  if (!args.skipReaderDebit) {
+    try {
+      await adjustUserBalance(userId, -grossUsdc, args.debitKind ?? "session_debit", payment.id);
+    } catch (e) {
+      await updatePayment(payment.id, { status: "failed" });
+      return { paymentId: payment.id, status: "failed", reason: (e as Error).message };
+    }
   }
 
   // 2. Accrue the creator's net to escrow; the fee is retained in the treasury.
@@ -154,6 +159,7 @@ export async function unlockSeries(args: {
   passPrice?: number | null;
   feeBps?: number;
   callerType?: "human" | "agent";
+  skipReaderDebit?: boolean;
 }): Promise<{ ok: boolean; amount: number; reason?: string }> {
   const chapters = await listChapters(args.seriesId);
   if (!chapters.length) return { ok: false, amount: 0, reason: "no chapters to unlock" };
@@ -169,6 +175,7 @@ export async function unlockSeries(args: {
     debitKind: "unlock_debit",
     feeBps: args.feeBps,
     callerType: args.callerType,
+    skipReaderDebit: args.skipReaderDebit,
   });
   if (result.status === "failed") return { ok: false, amount, reason: result.reason };
   await setFollowMode(args.userId, args.seriesId, "series_unlock");

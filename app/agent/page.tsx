@@ -17,6 +17,8 @@ interface AgentConfig {
   weeklySpent: number;
   remaining: number;
   walletAddress: string | null;
+  walletBalance: number;
+  weekFunded: number;
 }
 interface FeedMsg {
   id: string;
@@ -238,7 +240,7 @@ function AgentConsole({ userId, config, onConfig }: { userId: string; config: Ag
             {config.paused ? "Paused" : "Active"}
           </span>
           <span className="tabular text-sm text-[var(--color-muted)]">
-            <span className="font-semibold text-[var(--color-gold)]">${config.weeklySpent.toFixed(2)}</span> / ${config.weeklyLimit.toFixed(2)} this week
+            <span className="font-semibold text-[var(--color-gold)]">${config.walletBalance.toFixed(2)}</span> in wallet · ${config.weeklySpent.toFixed(2)} spent / ${config.weeklyLimit.toFixed(2)}
           </span>
         </div>
         <div className="mt-2 h-1.5 w-full bg-[var(--color-surface-2)]">
@@ -252,8 +254,8 @@ function AgentConsole({ userId, config, onConfig }: { userId: string; config: Ag
             {config.paused ? <Play size={13} /> : <Pause size={13} />} {config.paused ? "Resume" : "Pause"}
           </button>
           {config.walletAddress && (
-            <a href={`${ARC_EXPLORER}/address/${config.walletAddress}`} target="_blank" rel="noreferrer" className="text-utility ml-auto inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-gold)]">
-              <Coins size={12} /> Agent wallet <ExternalLink size={11} />
+            <a href={`${ARC_EXPLORER}/address/${config.walletAddress}`} target="_blank" rel="noreferrer" className="text-utility ml-auto inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-gold)]" title={config.walletAddress}>
+              <Coins size={12} /> {config.walletAddress.slice(0, 6)}…{config.walletAddress.slice(-4)} <ExternalLink size={11} />
             </a>
           )}
         </div>

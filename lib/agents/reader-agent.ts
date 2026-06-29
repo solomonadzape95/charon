@@ -11,6 +11,7 @@
 import { callModel, extractJson, agentEnabled } from "@/lib/agents/shared";
 import {
   addAgentMessage,
+  adjustUserBalance,
   getAgentConfig,
   getChapterById,
   getCreatorById,
@@ -22,6 +23,7 @@ import {
   updateAgentConfig,
 } from "@/lib/db";
 import { settleSession, unlockSeries, MIN_SETTLE } from "@/lib/payments";
+import { ensureGatewayBalance } from "@/lib/payer";
 import type { Series, TasteProfile } from "@/lib/supabase";
 
 const WEEK_MS = 7 * 86_400_000;
@@ -81,27 +83,46 @@ export async function runAgent(userId: string): Promise<RunResult> {
   if (!config) return { ran: false, reason: "no agent configured", spent: 0, chaptersRead: 0, remaining: 0 };
   if (config.paused) return { ran: false, reason: "paused", spent: 0, chaptersRead: 0, remaining: 0 };
 
-  // Weekly reset.
-  let weeklySpent = Number(config.weekly_spent_usdc);
-  const limit = Number(config.weekly_limit_usdc);
-  if (Date.now() - new Date(config.week_start).getTime() > WEEK_MS) {
-    weeklySpent = 0;
-    await updateAgentConfig(userId, { weekly_spent_usdc: 0, week_start: new Date().toISOString() });
-  }
-  let remaining = Math.max(0, limit - weeklySpent);
-
   const user = await getUserById(userId);
-  if (!user) return { ran: false, reason: "user missing", spent: 0, chaptersRead: 0, remaining };
-  let balance = Number(user.balance_usd);
+  if (!user) return { ran: false, reason: "user missing", spent: 0, chaptersRead: 0, remaining: 0 };
 
-  if (remaining < MIN_SETTLE) {
-    await addAgentMessage({ userId, sender: "agent", kind: "budget", content: `That's your $${limit.toFixed(2)} for this week. Budget resets next week — I'll pick back up then.` });
-    return { ran: true, reason: "budget exhausted", spent: 0, chaptersRead: 0, remaining };
+  const limit = Number(config.weekly_limit_usdc);
+  let weeklySpent = Number(config.weekly_spent_usdc);
+  let walletBalance = Number(config.wallet_balance_usdc); // the agent's own funded budget
+
+  // ── Week reset: return the unspent to the reader, then start a fresh week. ──
+  if (Date.now() - new Date(config.week_start).getTime() > WEEK_MS) {
+    if (walletBalance > 0.001) {
+      await adjustUserBalance(userId, walletBalance, "agent_return");
+      await addAgentMessage({ userId, sender: "agent", kind: "budget", content: `New week — returned $${walletBalance.toFixed(2)} of unspent budget to your balance.` });
+    }
+    weeklySpent = 0;
+    walletBalance = 0;
+    await updateAgentConfig(userId, { weekly_spent_usdc: 0, wallet_balance_usdc: 0, week_funded_usdc: 0, week_start: new Date().toISOString() });
   }
-  if (balance < MIN_SETTLE) {
-    await addAgentMessage({ userId, sender: "agent", kind: "budget", content: `Your reading balance is empty, so I've paused. Top up and I'll keep going.` });
-    return { ran: true, reason: "balance empty", spent: 0, chaptersRead: 0, remaining };
+
+  // ── Fund the agent's wallet up to this week's limit, from the reader's balance. ──
+  if (walletBalance < MIN_SETTLE) {
+    const want = limit - weeklySpent;
+    const fund = Math.min(want, Number(user.balance_usd));
+    if (fund < MIN_SETTLE) {
+      await addAgentMessage({ userId, sender: "agent", kind: "budget", content: weeklySpent >= limit ? `That's your $${limit.toFixed(2)} for this week — I'll pick back up next week.` : `Your balance is too low to fund me. Top up and I'll get going.` });
+      return { ran: true, reason: "unfunded", spent: 0, chaptersRead: 0, remaining: 0 };
+    }
+    await adjustUserBalance(userId, -fund, "agent_fund");
+    walletBalance = fund;
+    await updateAgentConfig(userId, { wallet_balance_usdc: walletBalance, week_funded_usdc: Number(config.week_funded_usdc) + fund });
+    // Best-effort: top up the agent wallet's standing on-chain Gateway deposit.
+    if (config.agent_wallet_pk) {
+      try {
+        await ensureGatewayBalance(config.agent_wallet_pk, "1");
+      } catch (e) {
+        console.warn("[charon] agent wallet gateway top-up:", (e as Error).message);
+      }
+    }
+    await addAgentMessage({ userId, sender: "agent", kind: "budget", content: `Loaded $${fund.toFixed(2)} into my wallet for the week. Let's find something good.` });
   }
+  let remaining = walletBalance;
 
   const taste = config.taste_profile;
   const affinities = new Set((taste?.genre_affinities ?? []).map((g) => g.toLowerCase()));
@@ -117,7 +138,7 @@ export async function runAgent(userId: string): Promise<RunResult> {
   let spent = 0;
   let chaptersRead = 0;
   for (const { s: series } of ranked.slice(0, 8)) {
-    if (remaining < MIN_SETTLE || balance < MIN_SETTLE) break;
+    if (walletBalance < MIN_SETTLE) break;
     const unpaid = await unpaidChaptersForUser(userId, series.id);
     if (!unpaid.length) continue;
 
@@ -166,14 +187,12 @@ export async function runAgent(userId: string): Promise<RunResult> {
       passPrice > 0 &&
       unpaid.length >= 4 &&
       passPrice < remainingCost &&
-      passPrice <= remaining + 1e-9 &&
-      passPrice <= balance + 1e-9
+      passPrice <= walletBalance + 1e-9
     ) {
-      const res = await unlockSeries({ userId, seriesId: series.id, creator, passPrice, feeBps: AGENT_FEE_BPS, callerType: "agent" });
+      const res = await unlockSeries({ userId, seriesId: series.id, creator, passPrice, feeBps: AGENT_FEE_BPS, callerType: "agent", skipReaderDebit: true });
       if (res.ok) {
         weeklySpent += res.amount;
-        balance -= res.amount;
-        remaining = Math.max(0, limit - weeklySpent);
+        walletBalance -= res.amount;
         spent += res.amount;
         chaptersRead += unpaid.length;
         await addAgentMessage({
@@ -193,8 +212,7 @@ export async function runAgent(userId: string): Promise<RunResult> {
     const cap = decision.decision === "CONTINUE" ? MAX_CHAPTERS_PER_RUN : decision.decision === "SAMPLE" ? 2 : 1;
     for (const ch of unpaid.slice(0, cap)) {
       const price = Number(ch.current_price_usdc);
-      if (weeklySpent + price > limit + 1e-9) break;
-      if (balance < price) break;
+      if (price > walletBalance + 1e-9) break; // out of funded budget
 
       const res = await settleSession({
         userId,
@@ -204,12 +222,12 @@ export async function runAgent(userId: string): Promise<RunResult> {
         feeBps: AGENT_FEE_BPS,
         callerType: "agent",
         debitKind: "session_debit",
+        skipReaderDebit: true, // already paid from the agent's funded wallet
       });
       if (res.status !== "settled") break;
 
       weeklySpent += price;
-      balance -= price;
-      remaining = Math.max(0, limit - weeklySpent);
+      walletBalance -= price;
       spent += price;
       chaptersRead += 1;
       await addAgentMessage({
@@ -227,7 +245,8 @@ export async function runAgent(userId: string): Promise<RunResult> {
     if (chaptersRead > 0) break; // committed to one series this run
   }
 
-  await updateAgentConfig(userId, { weekly_spent_usdc: weeklySpent });
+  remaining = walletBalance;
+  await updateAgentConfig(userId, { weekly_spent_usdc: weeklySpent, wallet_balance_usdc: walletBalance });
 
   if (chaptersRead === 0) {
     await addAgentMessage({ userId, sender: "agent", kind: "summary", content: `Looked around but didn't find a fresh match worth your money right now. I'll keep watching for new chapters.` });
@@ -236,7 +255,7 @@ export async function runAgent(userId: string): Promise<RunResult> {
       userId,
       sender: "agent",
       kind: "summary",
-      content: `Done for now — read ${chaptersRead} chapter${chaptersRead > 1 ? "s" : ""} for $${spent.toFixed(2)}. $${remaining.toFixed(2)} left in this week's budget.`,
+      content: `Done for now — read ${chaptersRead} chapter${chaptersRead > 1 ? "s" : ""} for $${spent.toFixed(2)}. $${remaining.toFixed(2)} left in my wallet this week.`,
     });
   }
 

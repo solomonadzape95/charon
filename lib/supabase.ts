@@ -152,6 +152,9 @@ export interface AgentConfig {
   week_start: string;
   agent_wallet_id: string | null;
   agent_wallet_address: string | null;
+  agent_wallet_pk: string | null;
+  wallet_balance_usdc: number;
+  week_funded_usdc: number;
   paused: boolean;
 }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { addAgentMessage, getAgentConfig, getUserById, upsertAgentConfig } from "@/lib/db";
 import { buildTasteProfile } from "@/lib/agents/reader-agent";
-import { circleEnabled, createCreatorWallet } from "@/lib/circle";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -17,7 +17,9 @@ function shape(config: Awaited<ReturnType<typeof getAgentConfig>>) {
     weeklyLimit: limit,
     weeklySpent: spent,
     remaining: Math.max(0, limit - spent),
-    walletAddress: config.agent_wallet_address,
+    walletAddress: config.agent_wallet_address, // public — the private key is never returned
+    walletBalance: Number(config.wallet_balance_usdc),
+    weekFunded: Number(config.week_funded_usdc),
   };
 }
 
@@ -48,24 +50,20 @@ export async function POST(req: NextRequest) {
   const existing = await getAgentConfig(userId);
   const taste = await buildTasteProfile(loved, avoids);
 
-  // Provision the agent's own Circle wallet (optional — non-blocking on testnet).
-  let walletId: string | null = existing?.agent_wallet_id ?? null;
+  // The agent gets its OWN wallet — a real keypair it signs payments with.
+  let walletPk: string | null = existing?.agent_wallet_pk ?? null;
   let walletAddress: string | null = existing?.agent_wallet_address ?? null;
-  if (circleEnabled() && !walletId) {
-    try {
-      const w = await createCreatorWallet(`agent:${userId}`);
-      walletId = w.walletId;
-      walletAddress = w.address;
-    } catch (e) {
-      console.warn("[charon] agent wallet provision failed:", (e as Error).message);
-    }
+  if (!walletPk) {
+    const pk = generatePrivateKey();
+    walletPk = pk;
+    walletAddress = privateKeyToAccount(pk).address;
   }
 
   const config = await upsertAgentConfig({
     userId,
     tasteProfile: taste,
     weeklyLimitUsdc: weeklyLimit,
-    agentWalletId: walletId,
+    agentWalletPk: walletPk,
     agentWalletAddress: walletAddress,
   });
 

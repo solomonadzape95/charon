@@ -59,7 +59,7 @@ export async function createUser(email: string): Promise<User> {
 export async function adjustUserBalance(
   userId: string,
   deltaUsd: number,
-  kind: "deposit" | "welcome" | "gift" | "tip" | "session_debit" | "unlock_debit" | "refund",
+  kind: "deposit" | "welcome" | "gift" | "tip" | "agent_fund" | "agent_return" | "session_debit" | "unlock_debit" | "refund",
   refId?: string | null,
 ): Promise<number> {
   const db = supabaseService();
@@ -381,12 +381,14 @@ export async function upsertAgentConfig(input: {
   weeklyLimitUsdc?: number;
   agentWalletId?: string | null;
   agentWalletAddress?: string | null;
+  agentWalletPk?: string | null;
 }): Promise<AgentConfig> {
   const patch: Record<string, unknown> = { user_id: input.userId };
   if (input.tasteProfile !== undefined) patch.taste_profile = input.tasteProfile;
   if (input.weeklyLimitUsdc !== undefined) patch.weekly_limit_usdc = input.weeklyLimitUsdc;
   if (input.agentWalletId !== undefined) patch.agent_wallet_id = input.agentWalletId;
   if (input.agentWalletAddress !== undefined) patch.agent_wallet_address = input.agentWalletAddress;
+  if (input.agentWalletPk !== undefined) patch.agent_wallet_pk = input.agentWalletPk;
   const { data, error } = await supabaseService()
     .from("agent_config")
     .upsert(patch, { onConflict: "user_id" })

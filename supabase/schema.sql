@@ -232,6 +232,9 @@ create table public.agent_config (
   week_start timestamptz not null default now(),
   agent_wallet_id text,
   agent_wallet_address text,
+  agent_wallet_pk text,                              -- server-only private key (v2)
+  wallet_balance_usdc numeric not null default 0,    -- funded budget remaining this week
+  week_funded_usdc numeric not null default 0,
   paused boolean not null default false
 );
 create table public.agent_messages (
