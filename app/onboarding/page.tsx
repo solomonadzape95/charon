@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BookOpen, Activity, Coins, Check, ArrowRight } from "lucide-react";
-import { Logo } from "@/components/Logo";
+import { BookOpen, Activity, Coins, Check, ArrowRight, ArrowLeft } from "lucide-react";
 import { coverFor } from "@/lib/covers";
+import { DepositPanel } from "@/components/DepositPanel";
 
 interface Series {
   id: string;
@@ -17,7 +17,6 @@ interface Series {
 
 const LS_KEY = "charon_user_id";
 const WELCOME_CREDIT = 0.5; // display default; the server is the source of truth
-const AMOUNTS = [3, 5, 10];
 
 export default function Onboarding() {
   const router = useRouter();
@@ -25,8 +24,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [balance, setBalance] = useState(0);
   const [creditApplied, setCreditApplied] = useState(false);
-  const [custom, setCustom] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [creditAmount, setCreditAmount] = useState(WELCOME_CREDIT);
   const [series, setSeries] = useState<Series[]>([]);
 
   // Apply the one-time welcome credit. Idempotent server-side — the DB grants it
@@ -40,6 +38,7 @@ export default function Onboarding() {
       });
       const data = await res.json();
       if (typeof data.balance === "number") setBalance(data.balance);
+      if (typeof data.amount === "number") setCreditAmount(data.amount);
       setCreditApplied(true);
     } catch {
       /* ignore */
@@ -64,24 +63,6 @@ export default function Onboarding() {
       .catch(() => {});
   }, [router, applyWelcomeCredit]);
 
-  async function deposit(amount: number) {
-    if (!userId || !amount || amount <= 0) return;
-    setBusy(true);
-    try {
-      const res = await fetch("/api/deposit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, amountUsd: amount }),
-      });
-      const data = await res.json();
-      if (typeof data.balance === "number") setBalance(data.balance);
-      setCustom("");
-      setStep(2);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (!userId) return null;
 
   return (
@@ -91,32 +72,48 @@ export default function Onboarding() {
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className={`h-1 flex-1 rounded-full transition-colors ${
-              i <= step ? "bg-[var(--color-gold)]" : "bg-[var(--color-surface-2)]"
-            }`}
+            className={`h-1 flex-1 rounded-full transition-colors ${i <= step ? "bg-[var(--color-gold)]" : "bg-[var(--color-surface-2)]"}`}
           />
         ))}
       </div>
 
+      {/* ── Step 1 — how it works ── */}
       {step === 0 && (
         <section className="fade-up flex flex-1 flex-col">
           <p className="text-utility text-[var(--color-gold)]">Welcome to Charon</p>
           <h1 className="font-display display-md mt-2 font-semibold">How Charon works</h1>
-          <p className="mt-4 max-w-xl text-lg text-[var(--color-muted)]">
-            You read. We quietly track how deeply you engage. We pay the creator automatically after your
-            session — a fair nanopayment, settled on Arc.
+          <p className="mt-4 max-w-xl text-lg leading-relaxed text-[var(--color-muted)]">
+            No coins. No subscriptions. No paywall mid-chapter. You just read — and the creator gets paid a fair amount
+            automatically, the moment you finish.
           </p>
 
-          {/* Flow illustration */}
-          <div className="mt-12 grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto_1fr] sm:items-center">
-            <FlowNode icon={BookOpen} label="You read" sub="Open any chapter" />
-            <FlowArrow />
-            <FlowNode icon={Activity} label="We track" sub="Engagement, silently" />
-            <FlowArrow />
-            <FlowNode icon={Coins} label="Creator paid" sub="Auto-settled after" accent />
-          </div>
+          <ol className="mt-10 divide-y divide-[var(--color-border)] border border-[var(--color-border)]">
+            <StepRow
+              n="01"
+              icon={BookOpen}
+              title="You read"
+              desc="Open any chapter and read. Nothing interrupts you — no prompts, no coin meter ticking down."
+            />
+            <StepRow
+              n="02"
+              icon={Activity}
+              title="We measure the read"
+              desc="An AI agent quietly gauges how deeply you engaged — time spent, how much you finished, what you re-read."
+            />
+            <StepRow
+              n="03"
+              icon={Coins}
+              title="The creator is paid"
+              desc="A fair USDC nanopayment settles to them on Arc, automatically. You only pay for what you actually read."
+              accent
+            />
+          </ol>
 
-          <div className="mt-auto pt-12">
+          <p className="mt-6 text-sm italic leading-relaxed text-[var(--color-muted)]">
+            The ferryman took one coin per crossing. Every chapter is a crossing — the coin is automatic.
+          </p>
+
+          <div className="mt-auto flex justify-end pt-10">
             <button onClick={() => setStep(1)} className="btn-coin w-full sm:w-auto">
               Get started <ArrowRight size={16} />
             </button>
@@ -124,78 +121,50 @@ export default function Onboarding() {
         </section>
       )}
 
+      {/* ── Step 2 — add funds ── */}
       {step === 1 && (
         <section className="fade-up flex flex-1 flex-col">
           <p className="text-utility text-[var(--color-gold)]">Step 2 — Add funds</p>
           <h1 className="font-display display-md mt-2 font-semibold">Top up to read</h1>
           <p className="mt-3 text-[var(--color-muted)]">
-            Add USDC with a card via Circle. You only spend it as you read — typically a few cents a chapter.
+            Add USDC and you only spend it as you read — typically a few cents a chapter. Totally optional to start.
           </p>
 
           {creditApplied && (
             <div className="mt-5 flex items-center gap-3 border border-[var(--color-accent-2)] bg-[color-mix(in_srgb,var(--color-accent-2)_8%,transparent)] p-4">
               <Check size={18} className="shrink-0 text-[var(--color-accent-2)]" />
               <p className="text-sm">
-                We&apos;ve added{" "}
-                <span className="font-semibold text-[var(--color-accent-2)]">${WELCOME_CREDIT.toFixed(2)}</span> to your
-                balance to get you started.
+                We&apos;ve added <span className="font-semibold text-[var(--color-accent-2)]">${creditAmount.toFixed(2)}</span>{" "}
+                of free credit to get you started — enough to read right now.
               </p>
             </div>
           )}
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {AMOUNTS.map((a) => (
-              <button
-                key={a}
-                disabled={busy}
-                onClick={() => deposit(a)}
-                className="group border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left transition-colors hover:border-[var(--color-gold)] disabled:opacity-50"
-              >
-                <p className="font-display text-3xl font-bold text-coin">${a}</p>
-                <p className="mt-2 text-xs text-[var(--color-muted)]">
-                  ≈ {a * 20}–{a * 50} chapters depending on what you read
-                </p>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-4 flex items-center gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]">$</span>
-              <input
-                type="number"
-                min="1"
-                step="1"
-                placeholder="Custom amount"
-                value={custom}
-                onChange={(e) => setCustom(e.target.value)}
-                className="charon-input pl-7"
-              />
-            </div>
-            <button
-              disabled={busy || !custom || Number(custom) <= 0}
-              onClick={() => deposit(Number(custom))}
-              className="btn-outline shrink-0"
-            >
-              Add
-            </button>
+          <div className="mt-6">
+            <DepositPanel userId={userId} onCredited={(b) => setBalance(b)} />
           </div>
 
           <p className="mt-3 text-xs text-[var(--color-muted)]">
-            Current balance: <span className="tabular text-[var(--color-ink)]">${balance.toFixed(2)}</span>
+            Balance: <span className="tabular text-[var(--color-ink)]">${balance.toFixed(2)}</span>
           </p>
 
-          <div className="mt-auto flex items-center justify-between pt-12">
-            <button onClick={() => setStep(0)} className="text-sm text-[var(--color-muted)] hover:text-[var(--color-ink)]">
-              ← Back
+          <div className="mt-auto flex flex-col-reverse items-stretch gap-4 pt-10 sm:flex-row sm:items-center sm:justify-between">
+            <button onClick={() => setStep(0)} className="btn-outline">
+              <ArrowLeft size={16} /> Back
             </button>
-            <button onClick={() => setStep(2)} className="text-sm text-[var(--color-muted)] hover:text-[var(--color-ink)]">
-              Skip for now →
-            </button>
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <span className="text-center text-xs text-[var(--color-muted)] sm:text-right">
+                No deposit needed — you can start with your free credit.
+              </span>
+              <button onClick={() => setStep(2)} className="btn-coin">
+                Skip for now <ArrowRight size={16} />
+              </button>
+            </div>
           </div>
         </section>
       )}
 
+      {/* ── Step 3 — pick a series ── */}
       {step === 2 && (
         <section className="fade-up flex flex-1 flex-col">
           <p className="text-utility text-[var(--color-gold)]">Step 3 — Start reading</p>
@@ -213,31 +182,25 @@ export default function Onboarding() {
                   className="group flex gap-4 bg-[var(--color-bg)] p-4 text-left transition-colors hover:bg-[var(--color-surface)]"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={coverFor(s.id, s.cover_image)}
-                    alt=""
-                    className="h-32 w-24 shrink-0 object-cover grayscale-[0.15]"
-                  />
+                  <img src={coverFor(s.id, s.cover_image)} alt="" className="h-32 w-24 shrink-0 object-cover grayscale-[0.15]" />
                   <div className="min-w-0">
                     {s.genre && <p className="text-utility text-[var(--color-muted)]">{s.genre}</p>}
                     <h3 className="font-display mt-0.5 text-lg font-semibold leading-tight group-hover:text-[var(--color-gold)]">
                       {s.title}
                     </h3>
-                    {s.description && (
-                      <p className="mt-1 line-clamp-2 text-xs text-[var(--color-muted)]">{s.description}</p>
-                    )}
+                    {s.description && <p className="mt-1 line-clamp-2 text-xs text-[var(--color-muted)]">{s.description}</p>}
                   </div>
                 </button>
               ))}
             </div>
           )}
 
-          <div className="mt-auto flex items-center justify-between pt-12">
-            <button onClick={() => setStep(1)} className="text-sm text-[var(--color-muted)] hover:text-[var(--color-ink)]">
-              ← Back
+          <div className="mt-auto flex items-center justify-between gap-4 pt-10">
+            <button onClick={() => setStep(1)} className="btn-outline">
+              <ArrowLeft size={16} /> Back
             </button>
-            <button onClick={() => router.push("/read")} className="text-sm text-[var(--color-gold)]">
-              Browse everything →
+            <button onClick={() => router.push("/read")} className="btn-coin">
+              Browse everything <ArrowRight size={16} />
             </button>
           </div>
         </section>
@@ -246,36 +209,29 @@ export default function Onboarding() {
   );
 }
 
-function FlowNode({
+function StepRow({
+  n,
   icon: Icon,
-  label,
-  sub,
+  title,
+  desc,
   accent,
 }: {
+  n: string;
   icon: typeof BookOpen;
-  label: string;
-  sub: string;
+  title: string;
+  desc: string;
   accent?: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center gap-2 border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-center">
-      <div
-        className={`grid h-11 w-11 place-items-center border border-[var(--color-border)] ${
-          accent ? "text-[var(--color-gold)]" : "text-[var(--color-ink)]"
-        }`}
-      >
-        <Icon size={20} strokeWidth={1.5} />
+    <li className="flex items-start gap-4 bg-[var(--color-surface)] p-5 sm:gap-5 sm:p-6">
+      <span className="font-display tabular w-9 shrink-0 text-3xl font-bold text-coin sm:w-12 sm:text-4xl">{n}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <Icon size={18} strokeWidth={1.5} className={accent ? "text-[var(--color-gold)]" : "text-[var(--color-ink)]"} />
+          <h3 className="font-display text-lg font-semibold">{title}</h3>
+        </div>
+        <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-muted)]">{desc}</p>
       </div>
-      <p className="font-display text-base font-semibold">{label}</p>
-      <p className="text-xs text-[var(--color-muted)]">{sub}</p>
-    </div>
-  );
-}
-
-function FlowArrow() {
-  return (
-    <div className="grid place-items-center py-1 text-[var(--color-gold)] sm:py-0">
-      <ArrowRight size={18} className="rotate-90 sm:rotate-0" />
-    </div>
+    </li>
   );
 }
