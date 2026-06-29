@@ -157,6 +157,19 @@ create table public.deposits (
 create index deposits_user_idx on public.deposits(user_id);
 create index deposits_created_idx on public.deposits(created_at desc);
 
+-- ── cross-post status (where a chapter has been cross-posted) ──
+create table public.cross_post_status (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  chapter_id uuid not null references public.chapters(id) on delete cascade,
+  platform text not null,                 -- royalroad | scribblehub | wattpad | webnovel
+  posted boolean not null default false,
+  posted_at timestamptz,
+  external_url text,
+  unique (chapter_id, platform)
+);
+create index cross_post_chapter_idx on public.cross_post_status(chapter_id);
+
 -- ── price history (Agent 3 audit trail) ───────────────────
 create table public.price_history (
   id uuid primary key default gen_random_uuid(),
@@ -199,7 +212,7 @@ declare t text;
 begin
   foreach t in array array[
     'users','creators','series','chapters','sessions','payments',
-    'ledger','price_history','follows','loyalty','deposits'
+    'ledger','price_history','follows','loyalty','deposits','cross_post_status'
   ]
   loop
     execute format('alter table public.%I enable row level security;', t);

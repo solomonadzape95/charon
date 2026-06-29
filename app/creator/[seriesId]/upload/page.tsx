@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Sparkles, Check } from "lucide-react";
 import { ChapterEditor } from "@/components/ChapterEditor";
 import { PanelUpload } from "@/components/ImageUpload";
+import { CrossPostPanel } from "@/components/CrossPostPanel";
 
 export default function UploadPage({ params }: { params: Promise<{ seriesId: string }> }) {
   const { seriesId } = use(params);
@@ -15,7 +16,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
   const [override, setOverride] = useState("");
   const [earlyAccess, setEarlyAccess] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ price: number; reasoning: string; chapterId: string; unlocks: number } | null>(null);
+  const [result, setResult] = useState<{ price: number; reasoning: string; chapterId: string; unlocks: number; html: string } | null>(null);
   const [error, setError] = useState("");
 
   async function importDocx(file: File): Promise<string> {
@@ -67,6 +68,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
         reasoning: data.pricingReasoning,
         chapterId: data.chapter.id,
         unlocks: Number(data.preReleaseUnlocks) || 0,
+        html: contentType === "text" ? html : "",
       });
       setTitle("");
       setHtml("");
@@ -160,6 +162,8 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
           </Link>
         </div>
       )}
+
+      {result?.html && <CrossPostPanel chapterId={result.chapterId} html={result.html} />}
     </div>
   );
 }
