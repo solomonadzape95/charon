@@ -2,10 +2,10 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Sparkles, Check } from "lucide-react";
+import { ArrowLeft, Sparkles, Check, Share2 } from "lucide-react";
 import { ChapterEditor } from "@/components/ChapterEditor";
 import { PanelUpload } from "@/components/ImageUpload";
-import { CrossPostPanel } from "@/components/CrossPostPanel";
+import { CrossPostModal } from "@/components/CrossPostModal";
 
 export default function UploadPage({ params }: { params: Promise<{ seriesId: string }> }) {
   const { seriesId } = use(params);
@@ -17,6 +17,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
   const [earlyAccess, setEarlyAccess] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ price: number; reasoning: string; chapterId: string; unlocks: number; html: string } | null>(null);
+  const [showCrosspost, setShowCrosspost] = useState(false);
   const [error, setError] = useState("");
 
   async function importDocx(file: File): Promise<string> {
@@ -157,13 +158,27 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
               <Check size={14} /> Auto-paid & unlocked for {result.unlocks} pre-release subscriber{result.unlocks > 1 ? "s" : ""}.
             </p>
           )}
-          <Link href={`/chapter/${result.chapterId}`} className="mt-4 inline-block text-utility text-[var(--color-gold)] hover:underline">
-            Preview chapter →
-          </Link>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link href={`/chapter/${result.chapterId}`} className="btn-outline !py-2 !text-[0.72rem]">
+              Author preview
+            </Link>
+            {result.html && (
+              <button onClick={() => setShowCrosspost(true)} className="btn-coin !py-2 !text-[0.72rem]">
+                <Share2 size={13} /> Cross-post chapter
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      {result?.html && <CrossPostPanel chapterId={result.chapterId} html={result.html} />}
+      {showCrosspost && result?.html && (
+        <CrossPostModal
+          chapterId={result.chapterId}
+          html={result.html}
+          chapterLabel="Your new chapter"
+          onClose={() => setShowCrosspost(false)}
+        />
+      )}
     </div>
   );
 }

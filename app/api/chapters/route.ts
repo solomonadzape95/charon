@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createChapter,
+  getChapterById,
   getCreatorById,
   getSeriesById,
   getUserById,
   listChapters,
   listSubscribers,
   nextChapterNumber,
+  updateChapter,
   updateSeries,
 } from "@/lib/db";
 import { priceChapter } from "@/lib/agents/pricing";
@@ -28,10 +30,58 @@ export const maxDuration = 60;
  * On upload, Agent 2 sets the base price (creator may override).
  */
 export async function GET(req: NextRequest) {
+  const id = req.nextUrl.searchParams.get("id");
+  if (id) {
+    const chapter = await getChapterById(id);
+    if (!chapter) return NextResponse.json({ error: "not found" }, { status: 404 });
+    return NextResponse.json({ chapter });
+  }
   const seriesId = req.nextUrl.searchParams.get("seriesId");
   if (!seriesId) return NextResponse.json({ error: "seriesId required" }, { status: 400 });
   const chapters = await listChapters(seriesId);
   return NextResponse.json({ chapters });
+}
+
+/**
+ * Edit an existing chapter's title and/or content. Re-sanitizes HTML and
+ * recomputes the word count; pricing is left as-is (re-priced by the agent).
+ *   PATCH /api/chapters { id, title?, content? }
+ */
+export async function PATCH(req: NextRequest) {
+  let body: { id?: string; title?: string | null; content?: string } = {};
+  try {
+    body = await req.json();
+  } catch {
+    /* ignore */
+  }
+  const { id } = body;
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  const chapter = await getChapterById(id);
+  if (!chapter) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  const patch: Record<string, unknown> = {};
+  if (body.title !== undefined) patch.title = body.title || null;
+
+  if (body.content !== undefined) {
+    if (chapter.content_type === "text") {
+      const stored = isHtmlContent(body.content) ? sanitizeHtml(body.content) : body.content;
+      patch.content = stored;
+      const text = stored.replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/gi, " ");
+      patch.word_count = text.trim().split(/\s+/).filter(Boolean).length;
+    } else {
+      // images: content is a JSON array of panel URLs
+      patch.content = body.content;
+      try {
+        const arr = JSON.parse(body.content);
+        patch.word_count = Array.isArray(arr) ? arr.length : 0;
+      } catch {
+        patch.word_count = body.content.split(/\s+/).filter(Boolean).length;
+      }
+    }
+  }
+
+  if (Object.keys(patch).length) await updateChapter(id, patch);
+  return NextResponse.json({ chapter: { ...chapter, ...patch } });
 }
 
 /**
