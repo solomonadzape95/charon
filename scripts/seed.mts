@@ -74,7 +74,7 @@ const SERIES = [
 async function main() {
   console.log(`Seeding ${BASE} …`);
 
-  const readerEmails = Array.from({ length: 8 }, (_, i) => (i === 0 ? "demo-reader@paywithcharon.xyz" : `demo-reader${i + 1}@paywithcharon.xyz`));
+  const readerEmails = Array.from({ length: 100 }, (_, i) => (i === 0 ? "demo-reader@paywithcharon.xyz" : `demo-reader${i + 1}@paywithcharon.xyz`));
   const allEmails = [...CREATORS.map((c) => c.email), ...readerEmails];
 
   // Idempotent reset (cascades remove series/chapters/sessions/follows).
@@ -91,13 +91,15 @@ async function main() {
   }
   console.log("creators:", creatorIds.length);
 
-  // Readers (funded)
-  const readerIds: string[] = [];
-  for (const email of readerEmails) {
-    const { user } = await post("/api/users", { email });
-    readerIds.push(user.id);
-    await post("/api/deposit", { userId: user.id, amountUsd: email === readerEmails[0] ? 5 : randInt(3, 12) });
-  }
+  // Readers (funded) — bulk inserted for speed, with real balances.
+  const { data: insertedReaders, error: rErr } = await db
+    .from("users")
+    .insert(readerEmails.map((email) => ({ email, balance_usd: round2(rand(2, 18)) })))
+    .select("id");
+  if (rErr) throw new Error(`readers insert: ${rErr.message}`);
+  const readerIds = (insertedReaders ?? []).map((r) => r.id as string);
+  // The sign-in demo reader gets a real deposit so its wallet looks lived-in.
+  await post("/api/deposit", { userId: readerIds[0], amountUsd: 5 });
   console.log("readers:", readerIds.length);
 
   // Supabase Auth users for the demo accounts (email/password sign-in).
@@ -109,8 +111,10 @@ async function main() {
 
   const payments: Record<string, unknown>[] = [];
   const sessions: Record<string, unknown>[] = [];
+  const follows: Record<string, unknown>[] = [];
   const earnedByCreator = new Map<string, number>();
   let textCursor = 0;
+  const modes = ["standard", "standard", "standard", "standard", "pre_release", "series_unlock"];
 
   for (let si = 0; si < SERIES.length; si++) {
     const s = SERIES[si];
@@ -119,9 +123,17 @@ async function main() {
 
     const nChapters = randInt(5, 7);
     const popularity = s.tier; // 1 small, 2 medium, 3 hit
-    const baseReads = popularity * randInt(60, 140);
-    const chapterIds: string[] = [];
-    const chapterPrices: number[] = [];
+
+    // ── Real followers: a believable slice of the reader pool, by popularity. ──
+    const followerCount = Math.min(readerIds.length, popularity * randInt(12, 26));
+    const followerReaders = [...readerIds].sort(() => Math.random() - 0.5).slice(0, followerCount);
+    for (const uid of followerReaders) {
+      follows.push({ user_id: uid, series_id: series.id, mode: pick(modes) });
+    }
+
+    let seriesReads = 0;
+    let completionSum = 0;
+    let completionN = 0;
 
     for (let ci = 0; ci < nChapters; ci++) {
       const text = POOL[textCursor % POOL.length];
@@ -135,82 +147,86 @@ async function main() {
         overrideBasePrice: price,
       });
       const id = r.chapter.id as string;
-      chapterIds.push(id);
-      chapterPrices.push(price);
+      const current = round2(price * rand(0.95, 1.25));
 
-      // Engagement falls off down the series (retention curve).
-      const reads = Math.max(4, Math.round(baseReads * Math.pow(0.88, ci) * rand(0.85, 1.1)));
-      const completion = round2(Math.min(0.98, rand(0.55, 0.9) + (popularity - 1) * 0.04 - ci * 0.01));
-      const reread = round2(rand(0.02, 0.05 + popularity * 0.05));
-      await db.from("chapters").update({
-        read_count: reads,
-        completion_rate: completion,
-        reread_rate: reread,
-        avg_time_spent_seconds: randInt(180, 600),
-        current_price_usdc: round2(price * rand(0.95, 1.25)),
-      }).eq("id", id);
+      // Readers of THIS chapter — followers, decaying down the series (retention).
+      const retention = Math.pow(0.86, ci);
+      const chapterReaders = followerReaders.filter(() => Math.random() < retention);
 
-      // Settled payments for this chapter (sampled).
-      const nPays = Math.min(reads, randInt(3, 4 + popularity * 3));
-      for (let p = 0; p < nPays; p++) {
-        const amt = round2(price * rand(0.8, 1.3));
-        payments.push({
-          session_id: null,
-          user_id: pick(readerIds),
-          creator_id: creatorId,
-          chapter_id: id,
-          amount_usdc: amt,
-          status: "settled",
-          arc_tx_hash: "0x" + hex(64),
-          created_at: daysAgo(rand(0, 12)),
-        });
-        earnedByCreator.set(creatorId, (earnedByCreator.get(creatorId) ?? 0) + amt);
-      }
-    }
+      let chCompletionSum = 0;
+      let rereadCount = 0;
+      for (const uid of chapterReaders) {
+        const comp = round2(Math.min(0.99, rand(0.55, 0.95) + (popularity - 1) * 0.03 - ci * 0.01));
+        const isReread = Math.random() < 0.04 + popularity * 0.04;
+        if (isReread) rereadCount++;
+        chCompletionSum += comp;
+        completionSum += comp;
+        completionN++;
 
-    // Series-level engagement + momentum (drives trending / rankings).
-    const followers = popularity * randInt(40, 110);
-    const avgCompletion = round2(rand(0.6, 0.92));
-    await db.from("series").update({
-      follower_count: followers,
-      avg_completion_rate: avgCompletion,
-      binge_velocity: round2(rand(1.5, 4.5)),
-      momentum_score: round2(popularity * 100 + followers + avgCompletion * 80 + rand(0, 40)),
-      status: si % 5 === 0 ? "completed" : "ongoing",
-    }).eq("id", series.id);
-
-    // Follows (varied modes) + reading sessions for a slice of readers.
-    const modes = ["standard", "standard", "standard", "pre_release", "series_unlock"];
-    for (const uid of readerIds.slice(0, randInt(3, readerIds.length))) {
-      await db.from("follows").upsert({ user_id: uid, series_id: series.id, mode: pick(modes) }, { onConflict: "user_id,series_id" });
-      const readUpTo = randInt(1, chapterIds.length);
-      for (let k = 0; k < readUpTo; k++) {
-        const amt = round2(chapterPrices[k] * rand(0.8, 1.2));
+        const amt = round2(current * rand(0.8, 1.2));
         sessions.push({
           user_id: uid,
-          chapter_id: chapterIds[k],
+          chapter_id: id,
           started_at: daysAgo(rand(0, 14)),
           ended_at: daysAgo(rand(0, 14)),
-          completion_rate: round2(rand(0.6, 1)),
+          completion_rate: comp,
           scroll_back_count: randInt(0, 4),
           time_spent_seconds: randInt(120, 540),
-          binge_depth: k + 1,
-          reader_comment: Math.random() < 0.25 ? pick(COMMENTS) : null,
+          binge_depth: ci + 1,
+          reader_comment: Math.random() < 0.18 ? pick(COMMENTS) : null,
           agent_value_score: round2(rand(0.4, 0.95)),
           amount_settled_usdc: amt,
           agent_reasoning: pick(REASONS),
           created_at: daysAgo(rand(0, 14)),
         });
+        // Most sessions settle a payment to the creator.
+        if (Math.random() < 0.85) {
+          payments.push({
+            session_id: null,
+            user_id: uid,
+            creator_id: creatorId,
+            chapter_id: id,
+            amount_usdc: amt,
+            fee_usdc: round2(amt * 0.05),
+            net_usdc: round2(amt * 0.95),
+            status: "settled",
+            arc_tx_hash: "0x" + hex(64),
+            created_at: daysAgo(rand(0, 12)),
+          });
+          earnedByCreator.set(creatorId, (earnedByCreator.get(creatorId) ?? 0) + round2(amt * 0.95));
+        }
       }
+
+      const reads = chapterReaders.length;
+      seriesReads += reads;
+      // Chapter stats — backed by the sessions above.
+      await db.from("chapters").update({
+        read_count: reads,
+        completion_rate: reads ? round2(chCompletionSum / reads) : 0,
+        reread_rate: reads ? round2(rereadCount / reads) : 0,
+        avg_time_spent_seconds: randInt(180, 600),
+        current_price_usdc: current,
+      }).eq("id", id);
     }
 
-    console.log(`  ${s.title} (${s.genre}) — ${nChapters} ch, ~${followers} readers`);
+    // Series stats — derived from the real follows + sessions, not invented.
+    const avgCompletion = completionN ? round2(completionSum / completionN) : 0;
+    await db.from("series").update({
+      follower_count: followerReaders.length,
+      avg_completion_rate: avgCompletion,
+      binge_velocity: round2(rand(1.5, 4.5)),
+      momentum_score: round2(followerReaders.length + seriesReads * 0.5 + avgCompletion * 80),
+      status: si % 5 === 0 ? "completed" : "ongoing",
+    }).eq("id", series.id);
+
+    console.log(`  ${s.title} (${s.genre}) — ${nChapters} ch, ${followerReaders.length} readers, ${seriesReads} reads`);
   }
 
-  // Bulk insert payments + sessions (chunked).
+  // Bulk insert follows + payments + sessions (chunked).
+  await chunkInsert("follows", follows);
   await chunkInsert("payments", payments);
   await chunkInsert("sessions", sessions);
-  console.log(`payments: ${payments.length}, sessions: ${sessions.length}`);
+  console.log(`follows: ${follows.length}, payments: ${payments.length}, sessions: ${sessions.length}`);
 
   // Accrue creator earnings to match settled payments.
   for (const [creatorId, total] of earnedByCreator) {
