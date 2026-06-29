@@ -14,7 +14,7 @@ import {
   updateChapter,
 } from "@/lib/db";
 import { settleSession, MIN_SETTLE } from "@/lib/payments";
-import { valueSession } from "@/lib/agents/reading";
+import { applyReaderModifiers, type ReaderPrice } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -142,33 +142,24 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const valuation = await valueSession(
-    {
-      timeSpentSeconds,
-      completionRate,
-      scrollBackCount,
-      bingeDepth: session.binge_depth,
-      readerComment,
-      isReread: priorReads > 0,
-    },
-    {
-      title: chapter.title ?? `Chapter ${chapter.chapter_number}`,
-      wordCount: chapter.word_count,
-      currentPrice: Number(chapter.current_price_usdc),
-      floorPrice: Number(chapter.floor_price_usdc),
-    },
+  // Simple, deterministic price: the chapter's current price minus the reader's
+  // loyalty / binge / discovery discounts, capped by the session cap + balance.
+  const priced = applyReaderModifiers(
+    Number(chapter.current_price_usdc),
     {
       loyaltyTier: loyalty.loyalty_tier,
       bingeDepth: session.binge_depth,
       chaptersReadInSeries: loyalty.chapters_read,
     },
-    Number(user.session_cap_usd),
-    Number(user.balance_usd),
+    Number(chapter.floor_price_usdc),
   );
 
+  const cap = Number(user.session_cap_usd);
+  const bal = Number(user.balance_usd);
+  let amount = Math.round(Math.min(priced.readerPrice, cap, bal) * 100) / 100;
+  let reasoning = priceReasoning(amount, priced);
+
   let settleStatus: "settled" | "failed" | "skipped" = "skipped";
-  let amount = valuation.amountUsd;
-  let reasoning = valuation.reasoning;
 
   if (amount >= MIN_SETTLE) {
     const result = await settleSession({
@@ -185,24 +176,21 @@ export async function POST(req: NextRequest) {
     }
   } else {
     amount = 0;
-    reasoning =
-      Number(user.balance_usd) < MIN_SETTLE
-        ? "Your balance is empty — top up to keep value flowing to creators."
-        : reasoning;
+    reasoning = bal < MIN_SETTLE ? "Your balance is empty — top up to keep value flowing to creators." : reasoning;
   }
 
-  // Persist the session record + agent reasoning.
+  // Persist the session record.
   await finalizeSession(session.id, {
     ended_at: new Date().toISOString(),
     completion_rate: completionRate,
     scroll_back_count: scrollBackCount,
     time_spent_seconds: timeSpentSeconds,
     reader_comment: readerComment,
-    agent_value_score: valuation.engagementScore,
+    agent_value_score: null,
     amount_settled_usdc: amount,
     agent_reasoning: reasoning,
-    loyalty_discount_applied: valuation.loyaltyDiscount,
-    binge_discount_applied: valuation.bingeDiscount,
+    loyalty_discount_applied: priced.loyaltyDiscount,
+    binge_discount_applied: priced.bingeDiscount,
   });
 
   // Update chapter aggregates (running averages) + loyalty.
@@ -214,7 +202,6 @@ export async function POST(req: NextRequest) {
     status: settleStatus,
     amount,
     reasoning,
-    engagementScore: valuation.engagementScore,
     creator: creator.name ?? series.title,
     seriesTitle: series.title,
     chapterTitle: chapter.title ?? `Chapter ${chapter.chapter_number}`,
@@ -225,6 +212,17 @@ export async function POST(req: NextRequest) {
 function clamp01(n: number): number {
   if (!Number.isFinite(n)) return 0;
   return Math.min(1, Math.max(0, n));
+}
+
+/** A short, honest line about the charge — the discounts that applied, if any. */
+function priceReasoning(amount: number, priced: ReaderPrice): string {
+  const parts: string[] = [];
+  if (priced.discoveryDiscount > 0) parts.push("first-3-chapters discount");
+  if (priced.loyaltyDiscount > 0) parts.push("loyalty discount");
+  if (priced.bingeDiscount > 0) parts.push("binge discount");
+  return parts.length
+    ? `$${amount.toFixed(2)} for this chapter · ${parts.join(" + ")}.`
+    : `$${amount.toFixed(2)} for this chapter.`;
 }
 
 /** A reader owns a series when their account email matches the creator's email. */

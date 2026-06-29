@@ -129,6 +129,24 @@ export default function Dashboard() {
     .reduce((sum, s) => sum + Number(s.amount), 0);
   const streak = readingStreak(sessions.map((s) => s.created_at));
 
+  // One row per chapter — collapse re-reads (free dupes) into the paid session.
+  const recentSessions = (() => {
+    const byChapter = new Map<string, SessionRow>();
+    const out: SessionRow[] = [];
+    for (const s of sessions) {
+      if (!s.chapterId) {
+        out.push(s);
+        continue;
+      }
+      const cur = byChapter.get(s.chapterId);
+      // Prefer the session that actually charged (status "paid" / higher amount).
+      if (!cur || (Number(s.amount ?? 0) > Number(cur.amount ?? 0))) byChapter.set(s.chapterId, cur ? { ...s } : s);
+      if (!cur) out.push(s);
+    }
+    // Replace placeholders with the preferred row, keep recency order.
+    return out.map((s) => (s.chapterId ? byChapter.get(s.chapterId) ?? s : s));
+  })();
+
   return (
     <>
       <AccountNav />
@@ -194,7 +212,7 @@ export default function Dashboard() {
           </div>
         ) : (
           <ul className="space-y-2">
-            {sessions.map((s) => (
+            {recentSessions.map((s) => (
               <SessionItem key={s.id} s={s} />
             ))}
           </ul>

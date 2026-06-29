@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getChapterById, getCreatorById, getSeriesById, listChapters } from "@/lib/db";
+import { getChapterById, getCreatorById, getSeriesById, getUserByEmail, hasPaidForChapter, listChapters } from "@/lib/db";
 import { ChapterReader } from "@/components/ChapterReader";
 import { GuestGate } from "@/components/GuestGate";
 import { estimatedReadMinutes } from "@/lib/pricing";
@@ -33,10 +33,17 @@ export default async function ChapterPage({ params }: { params: Promise<{ id: st
   // they're previewing their own work: no session is opened and nothing is ever
   // charged. The settle endpoint enforces the same rule as a backstop.
   let owner = false;
+  let alreadyPaid = false;
   if (user?.email) {
     const creator = await getCreatorById(series.creator_id);
     owner =
       !!creator?.email && creator.email.trim().toLowerCase() === user.email.trim().toLowerCase();
+    // Already own this chapter? Then re-reads open NO session at all — free,
+    // and no clutter of duplicate "free re-read" rows in history.
+    if (!owner) {
+      const appUser = await getUserByEmail(user.email.trim().toLowerCase());
+      if (appUser) alreadyPaid = await hasPaidForChapter(appUser.id, chapter.id);
+    }
   }
 
   if (guest && chapter.chapter_number > 1) {
@@ -72,6 +79,7 @@ export default async function ChapterPage({ params }: { params: Promise<{ id: st
       }))}
       guest={guest}
       owner={owner}
+      alreadyPaid={alreadyPaid}
     />
   );
 }

@@ -26,6 +26,8 @@ interface Props {
   guest?: boolean;
   /** The signed-in account is the creator of this series — preview only, never charged. */
   owner?: boolean;
+  /** The reader already paid for this chapter — re-read, no session, no charge. */
+  alreadyPaid?: boolean;
 }
 
 const LS_KEY = "charon_user_id";
@@ -147,12 +149,13 @@ export function ChapterReader(props: Props) {
     setBookmarked(on);
   }
 
-  // Resolve the reader and open a session. Owners (the series creator) never
-  // open a paid session — previewing your own work is always free.
+  // Resolve the reader and open a session. No session is opened when the reader
+  // is the creator (owner) or already owns this chapter (free re-read) — which
+  // also keeps re-reads out of the reading history.
   useEffect(() => {
     const id = typeof window !== "undefined" ? localStorage.getItem(LS_KEY) : null;
     setUserId(id);
-    if (!id || props.owner) return;
+    if (!id || props.owner || props.alreadyPaid) return;
 
     const bingeDepth = nextBingeDepth();
     let cancelled = false;
@@ -341,6 +344,12 @@ export function ChapterReader(props: Props) {
               <span className="font-semibold">Author preview.</span> This is your own work — reading it is always free and
               never opens a paid session.
             </span>
+          </div>
+        )}
+        {!props.owner && props.alreadyPaid && (
+          <div className="mb-8 flex items-center gap-3 px-4 py-3 text-sm" style={{ border: `1px solid ${theme.line}`, color: theme.chrome }}>
+            <BookmarkCheck size={16} className="shrink-0" />
+            <span>You own this chapter — re-reading it is free.</span>
           </div>
         )}
         {props.guest && (
