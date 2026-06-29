@@ -4,38 +4,21 @@ import {
   getCreatorById,
   getSeriesById,
   getSeriesBySlug,
+  listAnnouncementsForSeries,
   listChapters,
   listSeries,
 } from "@/lib/db";
+import { Megaphone } from "lucide-react";
 import { supabaseService } from "@/lib/supabase";
 import { PaymentModes } from "@/components/PaymentModes";
 import { SeriesTabs } from "@/components/SeriesTabs";
+import { LibraryButton } from "@/components/LibraryButton";
+import { TipJar } from "@/components/TipJar";
 import { AppHeader } from "@/components/AppHeader";
 import { estimatedReadMinutes } from "@/lib/pricing";
 import { coverFor } from "@/lib/covers";
 
 export const dynamic = "force-dynamic";
-
-const GENRE_TAGS: Record<string, string[]> = {
-  litrpg: ["system", "progression", "weak-to-strong"],
-  fantasy: ["magic", "adventure", "lost-world"],
-  romance: ["slow-burn", "found-family"],
-  scifi: ["space", "first-contact", "mystery"],
-  action: ["martial", "tournament"],
-  mystery: ["detective", "noir"],
-  horror: ["dread", "survival"],
-  manhwa: ["vertical-scroll", "action"],
-};
-
-function updateFrequency(dates: string[]): string | null {
-  if (dates.length < 2) return null;
-  const sorted = dates.map((d) => +new Date(d)).sort((a, b) => a - b);
-  let total = 0;
-  for (let i = 1; i < sorted.length; i++) total += sorted[i] - sorted[i - 1];
-  const avgDays = total / (sorted.length - 1) / 86_400_000;
-  if (avgDays < 1) return "new chapter daily";
-  return `new chapter every ${Math.max(1, Math.round(avgDays))}–${Math.round(avgDays) + 1} days`;
-}
 
 export default async function SeriesPage({
   params,
@@ -47,80 +30,55 @@ export default async function SeriesPage({
   const series = (await getSeriesBySlug(id)) ?? (await getSeriesById(id));
   if (!series) notFound();
 
-  const [creator, chapters, all] = await Promise.all([
+  const [creator, chapters, all, announcements] = await Promise.all([
     getCreatorById(series.creator_id),
     listChapters(series.id),
     listSeries(60),
+    listAnnouncementsForSeries(series.id, series.creator_id, 3),
   ]);
 
   const chIds = chapters.map((c) => c.id);
   const db = supabaseService();
-  const [{ data: commentRows }, { data: sessRows }] = await Promise.all([
-    chIds.length
-      ? db
-          .from("sessions")
-          .select("reader_comment, created_at, chapter_id")
-          .in("chapter_id", chIds)
-          .not("reader_comment", "is", null)
-          .order("created_at", { ascending: false })
-          .limit(14)
-      : Promise.resolve({
-          data: [] as {
-            reader_comment: string;
-            created_at: string;
-            chapter_id: string;
-          }[],
-        }),
-    chIds.length
-      ? db
-          .from("sessions")
-          .select("amount_settled_usdc")
-          .in("chapter_id", chIds)
-          .not("amount_settled_usdc", "is", null)
-      : Promise.resolve({ data: [] as { amount_settled_usdc: number }[] }),
-  ]);
+  const { data: commentRows } = chIds.length
+    ? await db
+        .from("sessions")
+        .select("reader_comment, created_at, chapter_id")
+        .in("chapter_id", chIds)
+        .not("reader_comment", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(14)
+    : { data: [] as { reader_comment: string; created_at: string; chapter_id: string }[] };
 
   const totalReads = chapters.reduce((s, c) => s + c.read_count, 0);
   const prices = chapters.map((c) => Number(c.current_price_usdc));
   const perChapterAvg = prices.length
     ? prices.reduce((a, b) => a + b, 0) / prices.length
     : 0.04;
-  const suggestedPass = Math.max(
-    0.99,
-    Math.round(prices.reduce((a, b) => a + b, 0) * 0.7 * 100) / 100,
-  );
-  const settled = (sessRows ?? []).map((s) => Number(s.amount_settled_usdc));
-  const avgSession = settled.length
-    ? settled.reduce((a, b) => a + b, 0) / settled.length
-    : perChapterAvg;
-  const completion = Number(series.avg_completion_rate) || 0.6;
-  const rating = Math.min(
-    4.95,
-    Math.max(3.5, Math.round((3.7 + completion * 1.25) * 100) / 100),
-  );
+  // Real, creator-set offers — only shown when configured (NULL = not offered).
+  const passPrice = series.series_pass_price_usdc != null ? Number(series.series_pass_price_usdc) : null;
+  const preReleasePrice = series.pre_release_price_usdc != null ? Number(series.pre_release_price_usdc) : null;
   const contentType = chapters[0]?.content_type ?? "text";
-  const freq = updateFrequency(chapters.map((c) => c.created_at));
   const chTitle = new Map(
     chapters.map((c) => [c.id, `Ch ${c.chapter_number}`]),
   );
 
-  const tags = [
-    ...new Set(
-      [
-        series.genre,
-        ...(GENRE_TAGS[(series.genre ?? "").toLowerCase()] ?? []),
-      ].filter(Boolean),
-    ),
-  ] as string[];
+  // Tags are exactly the creator's genres — a comma-separated list, nothing invented.
+  const tags = (series.genre ?? "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const primaryGenre = tags[0] ?? null;
   const related = all.filter((s) => s.id !== series.id);
-  const sameGenre = related.filter((s) => s.genre === series.genre);
+  const sameGenre = primaryGenre
+    ? related.filter((s) => (s.genre ?? "").toLowerCase().includes(primaryGenre.toLowerCase()))
+    : [];
   const youMayLike = (sameGenre.length >= 4 ? sameGenre : related).slice(0, 6);
 
   const stats = [
     { label: "Chapters", value: `${chapters.length}` },
     { label: "Readers", value: series.follower_count.toLocaleString() },
     { label: "Reads", value: totalReads.toLocaleString() },
-    { label: "Avg / session", value: `$${avgSession.toFixed(2)}` },
+    { label: "Base price", value: `$${perChapterAvg.toFixed(2)}` },
   ];
   const comments = (commentRows ?? []).map((r) => ({
     text: r.reader_comment,
@@ -137,10 +95,10 @@ export default async function SeriesPage({
           <Link href="/read" className="hover:text-[var(--color-ink)]">
             Discover
           </Link>
-          {series.genre && (
+          {primaryGenre && (
             <>
               <span>/</span>
-              <span className="text-[var(--color-ink)]">{series.genre}</span>
+              <span className="text-[var(--color-ink)]">{primaryGenre}</span>
             </>
           )}
         </nav>
@@ -160,18 +118,21 @@ export default async function SeriesPage({
                   {series.status}
                 </span>
                 <span>{contentType === "images" ? "Manhwa" : "Webnovel"}</span>
-                <span className="inline-flex items-center gap-1 text-[var(--color-ink)]">
-                  <Star /> {rating.toFixed(2)}
-                </span>
               </div>
               <h1 className="font-display display-md mt-3 font-bold">
                 {series.title}
               </h1>
-              {creator && (
-                <p className="mt-1 text-sm text-[var(--color-muted)]">
-                  by {creator.name ?? "Anonymous"}
-                </p>
-              )}
+              {creator &&
+                (creator.slug ? (
+                  <p className="mt-1 text-sm text-[var(--color-muted)]">
+                    by{" "}
+                    <Link href={`/author/${creator.slug}`} className="text-[var(--color-ink)] underline-offset-2 transition-colors hover:text-[var(--color-gold)] hover:underline">
+                      {creator.name ?? "Anonymous"}
+                    </Link>
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-[var(--color-muted)]">by {creator.name ?? "Anonymous"}</p>
+                ))}
             </div>
 
             {series.description && (
@@ -185,35 +146,50 @@ export default async function SeriesPage({
                 {tags.slice(0, 6).map((t) => (
                   <span
                     key={t}
-                    className="border border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-muted)]"
+                    className="border border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-muted)] uppercase text-utility"
                   >
-                    #{t}
+                    {t}
                   </span>
                 ))}
               </div>
             )}
 
-            {/* Stats under the plot + tags */}
-            <div className="flex flex-wrap gap-x-8 gap-y-3 border border-[var(--color-border)] divide-x justify-start items-start">
+            {/* Stats — even 4-up grid with hairline dividers */}
+            <div className="grid grid-cols-4 gap-px border border-[var(--color-border)] bg-[var(--color-border)]">
               {stats.map((s) => (
-                <div
-                  key={s.label}
-                  className="py-2 flex flex-col items-center justify-center w-1/5"
-                >
-                  <p className="tabular text-lg font-semibold text-[var(--color-ink)]">
-                    {s.value}
-                  </p>
-                  <p className="text-utility text-[var(--color-muted)]">
-                    {s.label}
-                  </p>
+                <div key={s.label} className="bg-[var(--color-surface)] px-3 py-3 text-center">
+                  <p className="tabular text-lg font-semibold text-[var(--color-ink)]">{s.value}</p>
+                  <p className="text-utility text-[var(--color-muted)]">{s.label}</p>
                 </div>
               ))}
             </div>
-            {freq && (
-              <p className="text-xs text-[var(--color-muted)]">⟳ {freq}</p>
-            )}
+            <div className="flex flex-wrap gap-3 pt-1">
+              {chapters[0] && (
+                <Link href={`/chapter/${chapters[0].id}`} className="btn-coin">
+                  Start reading
+                </Link>
+              )}
+              <LibraryButton seriesId={series.id} />
+              {chapters[0] && <TipJar chapterId={chapters[0].id} />}
+            </div>
           </div>
         </header>
+
+        {/* Author announcements */}
+        {announcements.length > 0 && (
+          <section className="space-y-3">
+            {announcements.map((a) => (
+              <div key={a.id} className="border border-[color-mix(in_srgb,var(--color-gold)_30%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-gold)_6%,transparent)] p-5">
+                <div className="flex items-center gap-2 text-utility text-[var(--color-gold)]">
+                  <Megaphone size={14} /> {creator?.name ? `${creator.name} · ` : ""}Announcement
+                  <span className="ml-auto text-[var(--color-muted)]">{new Date(a.created_at).toLocaleDateString()}</span>
+                </div>
+                {a.title && <p className="font-display mt-2 text-lg font-semibold">{a.title}</p>}
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[var(--color-muted)]">{a.body}</p>
+              </div>
+            ))}
+          </section>
+        )}
 
         {/* Payment modes + start reading */}
         <section className="space-y-4">
@@ -224,8 +200,8 @@ export default async function SeriesPage({
             seriesId={series.id}
             status={series.status}
             firstChapterId={chapters[0]?.id ?? null}
-            suggestedPass={suggestedPass}
-            perChapterAvg={perChapterAvg}
+            passPrice={passPrice}
+            preReleasePrice={preReleasePrice}
           />
         </section>
 
@@ -336,20 +312,6 @@ export default async function SeriesPage({
         )}
       </div>
     </>
-  );
-}
-
-function Star() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="14"
-      height="14"
-      className="fill-[var(--color-gold)]"
-      aria-hidden
-    >
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-    </svg>
   );
 }
 

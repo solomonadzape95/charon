@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 interface Stats {
   chaptersRead: number;
@@ -58,7 +59,13 @@ export default function StatsPage() {
                 key={i}
                 className="flex items-center justify-between border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3"
               >
-                <span className="text-sm font-medium">{c.name ?? c.slug ?? "Anonymous"}</span>
+                {c.slug ? (
+                  <Link href={`/author/${c.slug}`} className="text-sm font-medium underline-offset-2 hover:text-[var(--color-gold)] hover:underline">
+                    {c.name ?? c.slug}
+                  </Link>
+                ) : (
+                  <span className="text-sm font-medium">{c.name ?? "Anonymous"}</span>
+                )}
                 <span className="text-sm font-semibold text-[var(--color-gold)]">${c.earned.toFixed(2)}</span>
               </li>
             ))}

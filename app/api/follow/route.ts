@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFollow, getSeriesById, getUserById, setFollowMode, updateSeries } from "@/lib/db";
+import { getFollow, getSeriesById, getUserById, removeFollow, setFollowMode, updateSeries } from "@/lib/db";
 import type { FollowMode } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -39,4 +39,26 @@ export async function POST(req: NextRequest) {
   if (!existing) await updateSeries(seriesId, { follower_count: Number(series.follower_count) + 1 });
 
   return NextResponse.json({ mode });
+}
+
+/**
+ * Remove a series from the library (unfollow).
+ *   DELETE /api/follow { userId, seriesId }
+ */
+export async function DELETE(req: NextRequest) {
+  let body: { userId?: string; seriesId?: string } = {};
+  try {
+    body = await req.json();
+  } catch {
+    /* ignore */
+  }
+  const { userId, seriesId } = body;
+  if (!userId || !seriesId) return NextResponse.json({ error: "userId and seriesId required" }, { status: 400 });
+
+  const [series, existing] = await Promise.all([getSeriesById(seriesId), getFollow(userId, seriesId)]);
+  if (existing) {
+    await removeFollow(userId, seriesId);
+    if (series) await updateSeries(seriesId, { follower_count: Math.max(0, Number(series.follower_count) - 1) });
+  }
+  return NextResponse.json({ ok: true, mode: null });
 }
