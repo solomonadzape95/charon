@@ -61,6 +61,27 @@ const STEPS = [
   { n: "03", title: "Creators get paid", body: "A fair nanopayment settles to every creator you read — on Arc, instantly." },
 ];
 
+const PROBLEMS = [
+  {
+    n: "01",
+    title: "Paywalls kill the story",
+    body: "Hit a wall mid-chapter and most readers just leave. “Buy 100 coins to continue” is where good stories go to die.",
+    tag: "Readers walk away",
+  },
+  {
+    n: "02",
+    title: "One price fits no one",
+    body: "A flat subscription charges the skimmer and the superfan the same — and pays the author who hooked you the same as the one you abandoned.",
+    tag: "The unit is wrong",
+  },
+  {
+    n: "03",
+    title: "Creators get the scraps",
+    body: "Platforms take a heavy cut and push readers off to Patreon. Writers earn pennies on millions of reads, and can’t price what a chapter is truly worth.",
+    tag: "Authors underpaid",
+  },
+];
+
 export default function Home() {
   return (
     <>
@@ -76,6 +97,45 @@ export default function Home() {
               <span className="text-[var(--color-gold)]">✦</span>
             </span>
           ))}
+        </div>
+      </section>
+
+      {/* The problem — three tensions, hairline-split cards */}
+      <section className="border-b border-[var(--color-border)]">
+        <div className="mx-auto max-w-[88rem] px-6 py-24 lg:px-10">
+          <div className="max-w-3xl">
+            <p className="text-utility mb-4 text-[var(--color-gold)]">The problem</p>
+            <h2 className="font-display display-md font-semibold">
+              Reading online is a bad deal — for the people reading <span className="text-coin">and</span> the people writing.
+            </h2>
+            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--color-muted)]">
+              Paywalls break the very stories they’re protecting. Flat subscriptions price everyone wrong.
+              And the platforms in the middle keep most of the money. Nobody is paid for what a chapter is
+              actually worth — because nobody could charge a few cents for one. Until now.
+            </p>
+          </div>
+
+          <div className="mt-16 grid gap-px border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-3">
+            {PROBLEMS.map((p) => (
+              <article
+                key={p.n}
+                className="group relative flex flex-col bg-[var(--color-surface)] p-8 transition-colors hover:bg-[var(--color-surface-2)]"
+              >
+                <span className="font-display text-6xl font-bold leading-none text-coin opacity-90">{p.n}</span>
+                <h3 className="font-display mt-6 text-2xl font-semibold">{p.title}</h3>
+                <p className="mt-2 flex-1 text-[var(--color-muted)]">{p.body}</p>
+                <p className="text-utility mt-6 inline-flex w-fit items-center gap-2 text-[var(--color-gold)]">
+                  <span className="h-px w-6 bg-[var(--color-gold)]" />
+                  {p.tag}
+                </p>
+              </article>
+            ))}
+          </div>
+
+          <p className="mt-10 max-w-2xl text-lg text-[var(--color-muted)]">
+            <span className="text-[var(--color-ink)]">Charon fixes the unit.</span> Read freely, and a tiny, fair
+            payment settles per chapter — on rails finally cheap enough to make it work.
+          </p>
         </div>
       </section>
 
