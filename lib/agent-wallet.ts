@@ -34,12 +34,22 @@ export async function getOnchainUsdc(address: string): Promise<number> {
   return Number(formatEther(bal));
 }
 
-/** Treasury → agent wallet. Returns the tx hash. */
-export async function fundAgentWalletOnchain(toAddress: string, amountUsd: number): Promise<string> {
+/**
+ * Treasury → any address, as real native USDC on Arc. Returns the tx hash
+ * (visible on arcscan as an incoming transfer at the recipient). This is the
+ * path that actually lands spendable funds in an external wallet — unlike the
+ * x402 Gateway settle, which only credits the Gateway Wallet contract.
+ */
+export async function nativeTransferFromTreasury(toAddress: string, amountUsd: number): Promise<string> {
   const pk = process.env.TREASURY_WALLET_PK;
   if (!pk) throw new Error("TREASURY_WALLET_PK not set");
   const w = wallet(pk);
   return w.sendTransaction({ to: toAddress as `0x${string}`, value: parseEther(amountUsd.toFixed(6)) });
+}
+
+/** Treasury → agent wallet (weekly funding). Returns the tx hash. */
+export async function fundAgentWalletOnchain(toAddress: string, amountUsd: number): Promise<string> {
+  return nativeTransferFromTreasury(toAddress, amountUsd);
 }
 
 /** Agent wallet → treasury (returns the unspent, leaving a little for gas). */

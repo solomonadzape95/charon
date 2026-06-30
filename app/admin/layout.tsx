@@ -11,12 +11,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [state, setState] = useState<{ ok: boolean; email: string | null } | null>(null);
 
+  // Re-check on every admin route change. Crucially this re-runs after a
+  // successful login navigates /admin/login → /admin (the layout doesn't
+  // remount across that nav, so a one-shot `[]` effect would keep serving the
+  // stale "not an admin" result it cached while on the login page).
   useEffect(() => {
+    if (pathname === "/admin/login") return;
+    let cancelled = false;
     fetch("/api/admin/me")
       .then((r) => r.json())
-      .then((d) => setState({ ok: !!d.isAdmin, email: d.email ?? null }))
-      .catch(() => setState({ ok: false, email: null }));
-  }, []);
+      .then((d) => !cancelled && setState({ ok: !!d.isAdmin, email: d.email ?? null }))
+      .catch(() => !cancelled && setState({ ok: false, email: null }));
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   // The login page is the one /admin/* route that must render without the guard.
   if (pathname === "/admin/login") return <>{children}</>;

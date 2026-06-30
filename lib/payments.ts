@@ -13,7 +13,8 @@
  *  - Withdraw: cleared escrow settles from the treasury → the creator's address
  *    on Arc (the real on-chain tx), and is moved into lifetime withdrawn.
  */
-import { payUrl, ensureGatewayBalance } from "@/lib/payer";
+import { ensureGatewayBalance } from "@/lib/payer";
+import { nativeTransferFromTreasury } from "@/lib/agent-wallet";
 import { circleEnabled, createCreatorWallet } from "@/lib/circle";
 import {
   adjustCreatorBalance,
@@ -34,10 +35,6 @@ import type { Creator } from "@/lib/supabase";
 export const MIN_SETTLE = 0.01;
 export const MAX_SESSION = 5;
 
-function baseUrl(): string {
-  return process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-}
-
 /** Clamp + validate a session settlement against hard limits + the reader's cap. */
 export function validateAmount(amount: number, sessionCap: number): { ok: boolean; reason?: string } {
   if (Number.isNaN(amount) || amount < MIN_SETTLE) return { ok: false, reason: `minimum settlement is $${MIN_SETTLE}` };
@@ -56,12 +53,17 @@ export async function deposit(userId: string, amountUsd: number): Promise<number
   return adjustUserBalance(userId, amountUsd, "deposit");
 }
 
-/** Settle USDC from the pooled treasury to an address on Arc via x402. Returns the tx hash. */
+/**
+ * Settle USDC from the pooled treasury to an external address on Arc, as a REAL
+ * native transfer (arcscan-visible, spendable by the recipient). Returns the tx
+ * hash.
+ *
+ * NB: we deliberately do NOT use the x402 Gateway settle here — that path credits
+ * the Gateway Wallet contract, not the recipient's on-chain balance, so creators
+ * withdrawing "to my wallet" would see their ledger drop but nothing land.
+ */
 export async function settleFromTreasury(toWallet: string, amountUsd: number): Promise<string | undefined> {
-  const url = `${baseUrl()}/api/settle?to=${encodeURIComponent(toWallet)}&amount=${amountUsd}`;
-  const res = await payUrl(process.env.TREASURY_WALLET_PK!, url);
-  if (res.status !== 200) throw new Error(`settlement failed (status ${res.status})`);
-  return res.transaction;
+  return nativeTransferFromTreasury(toWallet, amountUsd);
 }
 
 export interface SettleSessionArgs {
