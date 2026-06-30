@@ -9,17 +9,19 @@ export async function GET(req: NextRequest) {
   if (denied) return denied;
 
   const status = req.nextUrl.searchParams.get("status"); // settled | pending | failed
-  const limit = Math.min(200, Number(req.nextUrl.searchParams.get("limit")) || 60);
+  const page = Math.max(1, Number(req.nextUrl.searchParams.get("page")) || 1);
+  const pageSize = Math.min(200, Number(req.nextUrl.searchParams.get("pageSize")) || 25);
+  const from = (page - 1) * pageSize;
   const db = supabaseService();
 
   let q = db
     .from("payments")
-    .select("id, amount_usdc, status, arc_tx_hash, created_at, creator_id, chapter_id")
+    .select("id, amount_usdc, status, arc_tx_hash, created_at, creator_id, chapter_id", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .range(from, from + pageSize - 1);
   if (status === "settled" || status === "pending" || status === "failed") q = q.eq("status", status);
 
-  const { data, error } = await q;
+  const { data, error, count } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const rows = (data ?? []) as Record<string, unknown>[];
 
@@ -47,5 +49,8 @@ export async function GET(req: NextRequest) {
       creator: cName.get(r.creator_id as string) ?? null,
       chapter: chTitle.get(r.chapter_id as string) ?? null,
     })),
+    total: count ?? 0,
+    page,
+    pageSize,
   });
 }

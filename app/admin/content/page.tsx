@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Search, Trash2 } from "lucide-react";
+import { Pagination } from "@/components/admin/Pagination";
 
 interface Row {
   id: string;
@@ -18,14 +19,21 @@ interface Row {
 
 export default function AdminContent() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [search, setSearch] = useState("");
 
   const load = useCallback(() => {
-    fetch(`/api/admin/content?search=${encodeURIComponent(search)}`)
+    fetch(`/api/admin/content?search=${encodeURIComponent(search)}&page=${page}`)
       .then((r) => r.json())
-      .then((d) => setRows(d.series ?? []))
+      .then((d) => {
+        setRows(d.series ?? []);
+        setTotal(d.total ?? 0);
+        if (d.pageSize) setPageSize(d.pageSize);
+      })
       .catch(() => {});
-  }, [search]);
+  }, [search, page]);
 
   useEffect(() => {
     const t = setTimeout(load, 250);
@@ -58,7 +66,7 @@ export default function AdminContent() {
         <h1 className="font-display display-md font-semibold">Content</h1>
         <div className="relative w-full sm:w-72">
           <Search size={16} strokeWidth={1.75} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search title…" className="charon-input rounded-full pl-10" />
+          <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Search title…" className="charon-input rounded-full pl-10" />
         </div>
       </div>
 
@@ -106,6 +114,8 @@ export default function AdminContent() {
         </table>
         {rows.length === 0 && <p className="px-4 py-6 text-sm text-[var(--color-muted)]">No series found.</p>}
       </div>
+
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
     </div>
   );
 }

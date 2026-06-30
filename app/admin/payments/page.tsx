@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Pagination } from "@/components/admin/Pagination";
 
 interface Row {
   id: string;
@@ -22,14 +23,21 @@ const FILTERS = [
 
 export default function AdminPayments() {
   const [rows, setRows] = useState<Row[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [status, setStatus] = useState("");
 
   const load = useCallback(() => {
-    fetch(`/api/admin/payments?status=${status}`)
+    fetch(`/api/admin/payments?status=${status}&page=${page}`)
       .then((r) => r.json())
-      .then((d) => setRows(d.payments ?? []))
+      .then((d) => {
+        setRows(d.payments ?? []);
+        setTotal(d.total ?? 0);
+        if (d.pageSize) setPageSize(d.pageSize);
+      })
       .catch(() => {});
-  }, [status]);
+  }, [status, page]);
 
   useEffect(() => {
     load();
@@ -43,7 +51,7 @@ export default function AdminPayments() {
         {FILTERS.map((f) => (
           <button
             key={f.id}
-            onClick={() => setStatus(f.id)}
+            onClick={() => { setStatus(f.id); setPage(1); }}
             className={`rounded-full border px-3 py-1 text-utility transition-colors ${
               status === f.id ? "border-[var(--color-gold)] bg-[var(--color-gold)] text-black" : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-ink)]"
             }`}
@@ -95,6 +103,8 @@ export default function AdminPayments() {
         </table>
         {rows.length === 0 && <p className="px-4 py-6 text-sm text-[var(--color-muted)]">No payments.</p>}
       </div>
+
+      <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />
     </div>
   );
 }

@@ -10,20 +10,22 @@ export async function GET(req: NextRequest) {
 
   const search = req.nextUrl.searchParams.get("search")?.trim().toLowerCase();
   const filter = req.nextUrl.searchParams.get("filter"); // claimed | unclaimed
-  const limit = Math.min(100, Number(req.nextUrl.searchParams.get("limit")) || 50);
+  const page = Math.max(1, Number(req.nextUrl.searchParams.get("page")) || 1);
+  const pageSize = Math.min(100, Number(req.nextUrl.searchParams.get("pageSize")) || 25);
+  const from = (page - 1) * pageSize;
 
   let q = supabaseService()
     .from("creators")
-    .select("id, name, email, slug, wallet_address, balance_usd, total_earned_usdc, claimed, claim_token, created_at")
+    .select("id, name, email, slug, wallet_address, balance_usd, total_earned_usdc, claimed, claim_token, created_at", { count: "exact" })
     .order("total_earned_usdc", { ascending: false })
-    .limit(limit);
+    .range(from, from + pageSize - 1);
   if (filter === "claimed") q = q.eq("claimed", true);
   if (filter === "unclaimed") q = q.eq("claimed", false);
   if (search) q = q.or(`name.ilike.%${search}%,email.ilike.%${search}%,slug.ilike.%${search}%`);
 
-  const { data, error } = await q;
+  const { data, error, count } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ creators: data ?? [] });
+  return NextResponse.json({ creators: data ?? [], total: count ?? 0, page, pageSize });
 }
 
 /**

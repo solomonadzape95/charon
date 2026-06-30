@@ -10,18 +10,20 @@ export async function GET(req: NextRequest) {
   if (denied) return denied;
 
   const search = req.nextUrl.searchParams.get("search")?.trim().toLowerCase();
-  const limit = Math.min(100, Number(req.nextUrl.searchParams.get("limit")) || 50);
+  const page = Math.max(1, Number(req.nextUrl.searchParams.get("page")) || 1);
+  const pageSize = Math.min(100, Number(req.nextUrl.searchParams.get("pageSize")) || 25);
+  const from = (page - 1) * pageSize;
 
   let q = supabaseService()
     .from("users")
-    .select("id, email, balance_usd, session_cap_usd, created_at")
+    .select("id, email, balance_usd, session_cap_usd, created_at", { count: "exact" })
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .range(from, from + pageSize - 1);
   if (search) q = q.ilike("email", `%${search}%`);
 
-  const { data, error } = await q;
+  const { data, error, count } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ users: data ?? [] });
+  return NextResponse.json({ users: data ?? [], total: count ?? 0, page, pageSize });
 }
 
 /** Adjust a reader's balance (credit positive, debit negative). */

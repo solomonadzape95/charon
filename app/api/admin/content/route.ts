@@ -9,17 +9,19 @@ export async function GET(req: NextRequest) {
   if (denied) return denied;
 
   const search = req.nextUrl.searchParams.get("search")?.trim().toLowerCase();
-  const limit = Math.min(200, Number(req.nextUrl.searchParams.get("limit")) || 100);
+  const page = Math.max(1, Number(req.nextUrl.searchParams.get("page")) || 1);
+  const pageSize = Math.min(200, Number(req.nextUrl.searchParams.get("pageSize")) || 25);
+  const from = (page - 1) * pageSize;
   const db = supabaseService();
 
   let q = db
     .from("series")
-    .select("id, slug, title, creator_id, genre, status, follower_count, momentum_score, created_at")
+    .select("id, slug, title, creator_id, genre, status, follower_count, momentum_score, created_at", { count: "exact" })
     .order("momentum_score", { ascending: false })
-    .limit(limit);
+    .range(from, from + pageSize - 1);
   if (search) q = q.ilike("title", `%${search}%`);
 
-  const { data: series, error } = await q;
+  const { data: series, error, count } = await q;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const rows = series ?? [];
 
@@ -41,6 +43,9 @@ export async function GET(req: NextRequest) {
       const r = s as Record<string, unknown>;
       return { ...r, creatorName: creatorName.get(r.creator_id as string) ?? null, chapterCount: chCount[r.id as string] ?? 0 };
     }),
+    total: count ?? 0,
+    page,
+    pageSize,
   });
 }
 
