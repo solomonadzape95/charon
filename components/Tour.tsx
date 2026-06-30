@@ -103,10 +103,6 @@ const STEPS: Step[] = [
     body: "Reads settle to the author as escrow that clears after a week, then they withdraw real USDC (or off-ramp to a bank). A creator with no account yet still earns — they just claim it later.",
   },
   {
-    title: "Agents do the quiet work",
-    body: "Beyond the reader agent, others price each chapter at upload, retune prices from real demand, and watch reader budgets. The model only suggests; the money math is fixed in code.",
-  },
-  {
     title: "That's the tour",
     body: "Poke around — read a chapter, deposit some test USDC, or set up your agent. You can reopen this anytime from the compass button.",
   },
