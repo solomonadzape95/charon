@@ -21,7 +21,7 @@ export function HeroCollage() {
         </div>
       </div>
 
-      {/* Cover marquee — real novel covers, each links to its series */}
+      {/* Cover marquee — decorative covers (non-linking for now) */}
       <div
         className="relative min-h-0 flex-1 overflow-hidden"
         style={{
@@ -56,9 +56,9 @@ export function HeroCollage() {
   );
 }
 
-function PhotoSlot({ slug, cover, title, genre }: { slug: string; cover: string; title: string; genre: string }) {
+function PhotoSlot({ cover, title, genre }: { cover: string; title: string; genre: string }) {
   return (
-    <Link href={`/series/${slug}`} className="group relative aspect-[5/8] h-full shrink-0 overflow-hidden bg-[var(--color-surface)]">
+    <div className="group relative aspect-[5/8] h-full shrink-0 overflow-hidden bg-[var(--color-surface)]">
       <div aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 70%, #000 100%)" }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -71,6 +71,6 @@ function PhotoSlot({ slug, cover, title, genre }: { slug: string; cover: string;
         <div className="font-display line-clamp-2 text-base font-semibold text-white">{title}</div>
         {genre && <div className="text-utility mt-1 capitalize text-white/70">{genre}</div>}
       </div>
-    </Link>
+    </div>
   );
 }

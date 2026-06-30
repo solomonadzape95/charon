@@ -112,18 +112,11 @@ const STEPS: Step[] = [
   },
 ];
 
-const SEEN_KEY = "charon_tour_seen";
-
 export function Tour() {
   const [open, setOpen] = useState(false);
   const [steps, setSteps] = useState<Step[]>([]);
   const [i, setI] = useState(0);
-  const [seen, setSeen] = useState(true); // assume seen until we read storage (avoids SSR flash)
   const [rect, setRect] = useState<DOMRect | null>(null);
-
-  useEffect(() => {
-    setSeen(localStorage.getItem(SEEN_KEY) === "1");
-  }, []);
 
   const start = useCallback(() => {
     // Keep concept cards (no sel) + anchored steps whose target is on this page.
@@ -131,8 +124,6 @@ export function Tour() {
     setSteps(present);
     setI(0);
     setOpen(true);
-    setSeen(true);
-    localStorage.setItem(SEEN_KEY, "1");
   }, []);
 
   const close = useCallback(() => setOpen(false), []);
@@ -181,12 +172,10 @@ export function Tour() {
       <button
         onClick={start}
         aria-label="Take a tour"
-        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full border border-[var(--color-gold)] bg-[var(--color-bg)] px-4 py-2.5 text-utility font-semibold text-[var(--color-gold)] shadow-lg transition-transform hover:scale-105"
+        className="fixed bottom-5 right-5 z-50 inline-flex items-center gap-2 rounded-full border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-bg)_85%,transparent)] px-4 py-2.5 text-utility font-medium text-[var(--color-muted)] shadow-lg backdrop-blur transition-colors hover:border-[var(--color-gold)] hover:text-[var(--color-ink)]"
       >
-        <Compass size={16} strokeWidth={1.8} />
+        <Compass size={16} strokeWidth={1.8} className="text-[var(--color-gold)]" />
         Tour
-        {!seen && <span className="absolute -right-1 -top-1 h-3 w-3 animate-ping rounded-full bg-[var(--color-gold)]" />}
-        {!seen && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-[var(--color-gold)]" />}
       </button>
     );
   }
