@@ -175,7 +175,7 @@ function AgentOnboarding({
         />
       </div>
 
-      <div className="space-y-3 border border-border bg-surface p-5">
+      <div data-tour="agent-budget" className="space-y-3 border border-border bg-surface p-5">
         <div className="flex items-baseline justify-between">
           <label className="text-utility text-muted">Weekly budget</label>
           <span className="font-display text-2xl font-bold text-coin">
@@ -314,7 +314,7 @@ function AgentConsole({
             />
             {config.paused ? "Paused" : "Active"}
           </span>
-          <span className="tabular text-sm text-muted">
+          <span data-tour="agent-wallet" className="tabular text-sm text-muted">
             <span className="font-semibold text-[var(--color-gold)]">
               ${(config.onchainBalance ?? config.walletBalance).toFixed(2)}
             </span>{" "}
@@ -330,6 +330,7 @@ function AgentConsole({
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <button
+            data-tour="agent-run"
             disabled={running || config.paused}
             onClick={run}
             className="btn-coin !py-2 !text-[0.72rem]"

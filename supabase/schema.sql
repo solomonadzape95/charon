@@ -251,6 +251,27 @@ create table public.agent_messages (
 );
 create index agent_messages_user_idx on public.agent_messages(user_id, created_at);
 
+-- Product feedback / reviews. Submitted by anyone (via the API, service role) and
+-- read only in the admin panel — NOT publicly readable, so it gets a service-only
+-- RLS policy below rather than the "public read" the content tables get.
+create table if not exists public.reviews (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  rating int,                                        -- 1..5 (optional)
+  message text not null,
+  name text,                                         -- optional, who left it
+  email text,                                        -- optional, for follow-up
+  user_id uuid references public.users(id) on delete set null,  -- if signed in
+  page text,                                         -- where they were when they sent it
+  status text not null default 'new'                 -- new | read | archived (admin triage)
+);
+create index if not exists reviews_created_idx on public.reviews(created_at desc);
+
+-- Reviews are admin-only: enable RLS with a service-role policy and NO public read.
+alter table public.reviews enable row level security;
+drop policy if exists "service all" on public.reviews;
+create policy "service all" on public.reviews for all to service_role using (true) with check (true);
+
 -- ── RLS ────────────────────────────────────────────────────
 do $$
 declare t text;

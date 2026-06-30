@@ -73,7 +73,7 @@ export default function WalletPage() {
     <>
       <AccountNav />
       <div className="mx-auto max-w-5xl space-y-8 px-6 py-10">
-        <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-7 sm:p-8">
+        <section data-tour="wallet-balance" className="border border-[var(--color-border)] bg-[var(--color-surface)] p-7 sm:p-8">
           <p className="text-utility text-[var(--color-muted)]">Reading balance</p>
           {w === null ? (
             <SkeletonBlock className="mt-1 h-16 w-52" />
@@ -82,7 +82,11 @@ export default function WalletPage() {
           )}
         </section>
 
-        {userId && <DepositPanel userId={userId} onCredited={() => load(userId)} />}
+        {userId && (
+          <div data-tour="wallet-deposit">
+            <DepositPanel userId={userId} onCredited={() => load(userId)} />
+          </div>
+        )}
 
         {userId && <GiftPanel userId={userId} />}
 

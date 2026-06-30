@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { BetaBadge } from "@/components/BetaBadge";
 import { useScrollHide } from "@/lib/use-scroll-hide";
 
 // App surfaces render their own AccountNav header, so the marketing TopBar is
@@ -36,6 +37,7 @@ export function TopBar() {
         <Link href="/" className="flex items-center gap-2.5" aria-label="Charon">
           <Logo size={42} className="text-[var(--color-gold)]" />
           <span className="font-display hidden text-3xl font-semibold tracking-tight text-coin sm:inline">Charon</span>
+          <BetaBadge className="mt-1 self-start" />
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           {links.map((l) => (

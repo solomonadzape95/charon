@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { BetaBadge } from "@/components/BetaBadge";
 import { CommandPalette } from "@/components/CommandPalette";
 import {
   getUserId,
@@ -132,10 +133,12 @@ export function AccountNav() {
           <span className="font-display hidden text-2xl font-semibold tracking-tight text-coin sm:inline">
             Charon
           </span>
+          <BetaBadge className="mt-0.5 self-start" />
         </Link>
 
         {/* Search — opens the command palette */}
         <button
+          data-tour="search"
           onClick={() => setPaletteOpen(true)}
           className="relative hidden max-w-sm shrink-0 items-center rounded-full border border-border bg-surface py-2 pl-10 pr-12 text-left text-sm text-muted transition-colors hover:border-(--color-gold) sm:flex"
         >
@@ -156,10 +159,12 @@ export function AccountNav() {
               {/* Desktop cluster */}
               <div className="hidden items-center gap-2.5 sm:flex">
                 {isCreator ? (
-                  <ModeSwitch
-                    mode={studioView ? "studio" : "read"}
-                    onSwitch={switchMode}
-                  />
+                  <span data-tour="mode-switch" className="inline-flex">
+                    <ModeSwitch
+                      mode={studioView ? "studio" : "read"}
+                      onSwitch={switchMode}
+                    />
+                  </span>
                 ) : (
                   <Link
                     href="/creator/onboarding"
@@ -260,13 +265,14 @@ export function AccountNav() {
 
       {/* Section tabs */}
       <div className="mx-auto max-w-5xl px-6 pb-2.5">
-        <nav className="flex gap-1 overflow-x-auto scrollbar-thin">
+        <nav data-tour="reader-tabs" className="flex gap-1 overflow-x-auto scrollbar-thin">
           {tabs.map((t) => {
             const active = isActive(pathname, t.href);
             return (
               <Link
                 key={t.href}
                 href={t.href}
+                data-tour={t.href === "/agent" ? "nav-agent" : undefined}
                 aria-current={active ? "page" : undefined}
                 className={`relative whitespace-nowrap rounded-full px-4 py-1.5 text-utility transition-colors ${
                   active

@@ -14,7 +14,7 @@ const EXCLUDE = ["/creator/onboarding"];
 const COLS = [
   { head: "Read", links: [{ label: "Discover", href: "/read" }, { label: "Library", href: "/library" }, { label: "Wallet", href: "/wallet" }] },
   { head: "Account", links: [{ label: "Overview", href: "/dashboard" }, { label: "Profile", href: "/profile" }, { label: "Become a creator", href: "/creator/onboarding" }] },
-  { head: "Built on", links: [{ label: "Arc", href: "https://testnet.arcscan.app" }, { label: "Circle", href: "https://circle.com" }, { label: "Live stats", href: "/stats" }] },
+  { head: "Built on", links: [{ label: "Arc", href: "https://testnet.arcscan.app" }, { label: "Circle", href: "https://circle.com" }, { label: "Live stats", href: "/stats" }, { label: "Send feedback", href: "/#feedback" }] },
 ];
 
 export function AppFooter() {

@@ -11,6 +11,7 @@
     "fund-gateway": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/fund-gateway.mts",
     "settle-smoke": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/settle-smoke.mts",
     "seed": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/seed.mts",
+    "wipe": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/wipe.mts",
     "import-asterion": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/import-asterion.mts",
     "demo-pricing": "node --experimental-transform-types --no-warnings --env-file=.env.local scripts/demo-pricing.mts"
   },

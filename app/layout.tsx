@@ -3,6 +3,7 @@ import { Cinzel, EB_Garamond, DM_Mono } from "next/font/google";
 import { TopBar } from "@/components/TopBar";
 import { AppFooter } from "@/components/AppFooter";
 import { SessionBridge } from "@/components/SessionBridge";
+import { Tour } from "@/components/Tour";
 import { THEME_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <TopBar />
         <main className="min-h-[calc(100vh-4.5rem)]">{children}</main>
         <AppFooter />
+        <Tour />
       </body>
     </html>
   );

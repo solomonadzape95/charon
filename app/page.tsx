@@ -2,9 +2,9 @@ import Link from "next/link";
 import { SafeImage } from "@/components/SafeImage";
 import { HeroCollage } from "@/components/landing/HeroCollage";
 import { StatsBand } from "@/components/landing/StatsBand";
-import { AgentsBento } from "@/components/landing/AgentsBento";
 import { AuthorsBand } from "@/components/landing/AuthorsBand";
 import { BigFooter } from "@/components/landing/BigFooter";
+import { ReviewForm } from "@/components/ReviewForm";
 
 const MARQUEE = [
   "NANOPAYMENTS",
@@ -142,11 +142,21 @@ export default function Home() {
         </div>
       </section>
 
-      {/* The four agents — image bento */}
-      <AgentsBento />
-
       {/* Favourite authors */}
       <AuthorsBand />
+
+      {/* Feedback / reviews */}
+      <section id="feedback" className="border-y border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="mx-auto max-w-2xl px-6 py-20 lg:px-10">
+          <p className="text-utility mb-3 text-[var(--color-gold)]">Tell us what you think</p>
+          <h2 className="font-display display-md mb-3 font-semibold">Charon is in testnet beta.</h2>
+          <p className="mb-8 text-[var(--color-muted)]">
+            We&apos;re building this in the open. What works, what&apos;s confusing, what would make you
+            read (or publish) here? A line or two helps a lot.
+          </p>
+          <ReviewForm />
+        </div>
+      </section>
 
       {/* Closing — CTA image as a grayed-out background */}
       <section className="relative flex min-h-[60vh] items-center overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-surface)]">
