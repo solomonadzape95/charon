@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { Node, mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -85,6 +85,21 @@ export function ChapterEditor({
       setWords(t ? t.split(/\s+/).length : 0);
     },
   });
+
+  // Keep the editor in sync when the parent resets or replaces `value` (e.g. the
+  // form clears itself after a successful publish). Without this the editor keeps
+  // showing stale text while the parent state is empty — so the next "Publish"
+  // either errors ("write some text") or silently republishes a duplicate.
+  // We only setContent when the two genuinely differ, so typing never jumps.
+  useEffect(() => {
+    if (!editor) return;
+    const incoming = value || "";
+    if (incoming !== editor.getHTML()) {
+      editor.commands.setContent(incoming, { emitUpdate: false });
+      const t = editor.getText().trim();
+      setWords(t ? t.split(/\s+/).length : 0);
+    }
+  }, [value, editor]);
 
   if (!editor) {
     return <div className="grid h-72 place-items-center border border-[var(--color-border)] text-[var(--color-muted)]">Loading editor…</div>;
