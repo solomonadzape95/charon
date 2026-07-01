@@ -134,7 +134,7 @@ export default function WithdrawPage() {
         <div>
           <Breadcrumb items={[{ label: "Studio", href: "/creator/studio" }, { label: "Withdraw" }]} />
           <h1 className="font-display display-md mt-2 font-semibold">Withdraw</h1>
-          <p className="mt-2 text-[var(--color-muted)]">Cash out cleared earnings to your wallet or bank — no minimum, no payout cycle.</p>
+          <p className="mt-2 text-[var(--color-muted)]">Cash out cleared earnings to your wallet or bank. No minimum, no payout cycle.</p>
         </div>
 
         {/* Balances */}
@@ -189,11 +189,11 @@ export default function WithdrawPage() {
                 <Link href="/creator/onboarding" className="underline">
                   setup
                 </Link>{" "}
-                to withdraw to USDC — or switch to bank above.
+                to withdraw to USDC, or switch to bank above.
               </p>
             ) : (
               <p className="mt-2 text-xs text-[var(--color-muted)]">
-                Both are always available — having a wallet on file never stops you cashing out to your bank, and the
+                Both are always available. Having a wallet on file never stops you cashing out to your bank, and the
                 reverse. Pick a different destination any time.
               </p>
             )}

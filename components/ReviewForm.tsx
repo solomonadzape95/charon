@@ -41,13 +41,13 @@ export function ReviewForm() {
       });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(d.error ?? "Couldn't send — try again.");
+        setError(d.error ?? "Couldn't send. Try again.");
         setState("idle");
         return;
       }
       setState("done");
     } catch {
-      setError("Network error — try again.");
+      setError("Network error. Try again.");
       setState("idle");
     }
   }

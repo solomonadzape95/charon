@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Receipt, Sparkles, ArrowRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Receipt, Sparkles, ArrowRight, Droplets, ExternalLink } from "lucide-react";
 import { AccountNav } from "@/components/AccountNav";
 import { DepositPanel } from "@/components/DepositPanel";
 import { GiftPanel } from "@/components/GiftPanel";
 import { ListSkeleton, SkeletonBlock } from "@/components/Skeletons";
+import EmptyState from "@/components/EmptyState";
 
 interface WalletData {
   balance: number;
@@ -88,6 +89,29 @@ export default function WalletPage() {
           </div>
         )}
 
+        {/* Testnet faucet — grab free test USDC from Circle, then send it in via Connect wallet */}
+        <a
+          href="https://faucet.circle.com"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center justify-between gap-4 border border-[var(--color-border)] bg-[var(--color-surface)] p-5 transition-colors hover:border-[var(--color-gold)]"
+        >
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-gold)_14%,transparent)] text-[var(--color-gold)]">
+              <Droplets size={18} />
+            </span>
+            <div>
+              <p className="font-medium">Need testnet USDC?</p>
+              <p className="text-xs text-[var(--color-muted)]">
+                Get free test USDC from Circle&apos;s faucet, then send it here with Connect wallet.
+              </p>
+            </div>
+          </div>
+          <span className="text-utility inline-flex shrink-0 items-center gap-1.5 text-[var(--color-gold)]">
+            Open faucet <ExternalLink size={14} />
+          </span>
+        </a>
+
         {userId && <GiftPanel userId={userId} />}
 
         <div className="grid grid-cols-2 gap-px border border-[var(--color-border)] bg-[var(--color-border)]">
@@ -114,7 +138,7 @@ export default function WalletPage() {
               <div>
                 <p className="font-medium">Reading agent wallet</p>
                 <p className="text-xs text-[var(--color-muted)]">
-                  ${w.agentWallet.funded.toFixed(2)} funded this week — the agent spends this on your behalf.
+                  ${w.agentWallet.funded.toFixed(2)} funded this week. The agent spends this on your behalf.
                 </p>
               </div>
             </div>
@@ -130,11 +154,11 @@ export default function WalletPage() {
           {w === null ? (
             <ListSkeleton rows={4} />
           ) : !w.ledger.length ? (
-            <div className="flex flex-col items-center gap-2 border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-12 text-center">
-              <Receipt size={26} className="text-[var(--color-muted)]" strokeWidth={1.5} />
-              <p className="font-display text-lg font-semibold">No transactions yet</p>
-              <p className="max-w-sm text-sm text-[var(--color-muted)]">Add funds above, then every deposit, chapter, tip and gift shows up here.</p>
-            </div>
+            <EmptyState
+              icon={<Receipt size={26} strokeWidth={1.5} />}
+              title="No transactions yet"
+              description="Add funds above, then every deposit, chapter, tip and gift shows up here."
+            />
           ) : (
             <>
               <div className="flex flex-wrap gap-1.5">
@@ -157,17 +181,19 @@ export default function WalletPage() {
               </div>
 
               {filtered.length === 0 ? (
-                <div className="border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-10 text-center">
-                  <p className="text-sm text-[var(--color-muted)]">
-                    {filter === "agent"
-                      ? "No agent activity yet — start your reading agent and fund a weekly budget."
+                <EmptyState
+                  variant="inline"
+                  title="Nothing here yet"
+                  description={
+                    filter === "agent"
+                      ? "No agent activity yet. Start your reading agent and fund a weekly budget."
                       : filter === "tips"
-                        ? "No tips yet — tip an author from any chapter."
+                        ? "No tips yet. Tip an author from any chapter."
                         : filter === "gifts"
-                          ? "No gifts yet — gift a deposit to another reader from above."
-                          : `No ${FILTERS.find((f) => f.id === filter)?.label.toLowerCase() ?? ""} transactions yet.`}
-                  </p>
-                </div>
+                          ? "No gifts yet. Gift a deposit to another reader from above."
+                          : `No ${FILTERS.find((f) => f.id === filter)?.label.toLowerCase() ?? ""} transactions yet.`
+                  }
+                />
               ) : (
                 <>
                   <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)]">

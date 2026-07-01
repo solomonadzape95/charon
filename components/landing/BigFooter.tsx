@@ -65,7 +65,7 @@ export function BigFooter() {
       <div className="mx-auto flex max-w-[88rem] flex-col gap-3 border-t border-[var(--color-border)] px-6 py-6 lg:px-10">
         <span className="text-utility text-[var(--color-muted)]">© 2026 Charon</span>
         <p className="max-w-4xl text-xs leading-relaxed text-[var(--color-muted)]/70">
-          Attributions — all from the Noun Project: coin emblem by Brickclay; “Pay per read” by Marcello Marino;
+          Attributions. All from the Noun Project: coin emblem by Brickclay; “Pay per read” by Marcello Marino;
           “Living prices” by Amethyst Studio; “Loyalty” by Björn Andersson; “Creators keep it” by WEBTECHOPS LLP;
           “Early access” &amp; “No interruptions” by IMG visuals icons. Novel covers and text are the property of their
           respective authors.

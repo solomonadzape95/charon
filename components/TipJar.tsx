@@ -64,7 +64,7 @@ export function TipJar({
         className={`inline-flex items-center gap-1.5 text-sm ${reader ? "" : "text-[var(--color-accent-2)]"}`}
         style={reader ? { color: theme!.chrome } : undefined}
       >
-        <Check size={15} className={reader ? "" : "text-[var(--color-accent-2)]"} /> Tipped ${done.toFixed(2)} — thank you
+        <Check size={15} className={reader ? "" : "text-[var(--color-accent-2)]"} /> Tipped ${done.toFixed(2)}. Thank you
       </span>
     );
   }
@@ -87,7 +87,7 @@ export function TipJar({
       style={reader ? { border: `1px solid ${theme!.line}` } : undefined}
     >
       <div className="flex items-center gap-2 text-sm font-medium" style={reader ? { color: theme!.fg } : undefined}>
-        <Coins size={16} className={reader ? "" : "text-[var(--color-gold)]"} /> Tip the author — 100% goes to them
+        <Coins size={16} className={reader ? "" : "text-[var(--color-gold)]"} /> Tip the author. 100% goes to them
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {AMOUNTS.map((a) => (

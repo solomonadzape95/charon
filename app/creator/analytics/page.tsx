@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
                 {best && best.reads > 0 && (
                   <p className="text-sm text-[var(--color-muted)]">
                     Strongest chapter:{" "}
-                    <span className="text-[var(--color-ink)]">#{String(best.n).padStart(2, "0")} {best.title}</span> —{" "}
+                    <span className="text-[var(--color-ink)]">#{String(best.n).padStart(2, "0")} {best.title}</span>.{" "}
                     {Math.round(best.completion * 100)}% completion.
                   </p>
                 )}

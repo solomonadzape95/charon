@@ -120,7 +120,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
 
         <label className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
           <input type="checkbox" checked={earlyAccess} onChange={(e) => setEarlyAccess(e.target.checked)} />
-          Early-access drop — pre-release subscribers are auto-charged & unlocked instantly
+          Early-access drop. Pre-release subscribers are auto-charged and unlocked instantly
         </label>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -136,7 +136,7 @@ export default function UploadPage({ params }: { params: Promise<{ seriesId: str
               className="charon-input pl-7 text-sm"
             />
           </div>
-          <span className="text-xs text-[var(--color-muted)]">optional — leave blank to let the agent price it</span>
+          <span className="text-xs text-[var(--color-muted)]">optional, leave blank to let the agent price it</span>
           <button disabled={busy} className="btn-coin ml-auto">
             {busy ? "Pricing…" : "Publish chapter"}
           </button>

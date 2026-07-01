@@ -11,12 +11,16 @@ export function HeroCollage() {
         <div className="grid grid-cols-14 items-end gap-6">
           <div className="fade-up col-span-14 md:col-span-3">
             <p className="max-w-md text-lg leading-relaxed text-[var(--color-muted)]">
-              A reading platform with <span className="text-[var(--color-ink)]">no subscription and no paywalls</span>.
-              Deposit once; after each session an agent pays the creator what your reading was actually worth.
+              No coins. No subscription. No wait timers. You load a small
+              balance and read. After each chapter,{" "}
+              <span className="text-coin">a few cents</span> go to the author:
+              exactly what your reading was worth.
             </p>
           </div>
           <div className="col-span-14 md:col-span-11">
-            <h1 className="font-display display-xl fade-up text-right font-bold tracking-tight">READ FREELY</h1>
+            <h1 className="font-display display-xl fade-up text-right font-bold tracking-tight">
+              READ FREELY
+            </h1>
           </div>
         </div>
       </div>
@@ -25,11 +29,19 @@ export function HeroCollage() {
       <div
         className="relative min-h-0 flex-1 overflow-hidden"
         style={{
-          maskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
-          WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
+          maskImage:
+            "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
+          WebkitMaskImage:
+            "linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)",
         }}
       >
-        <div className="flex h-full" style={{ animation: "marquee-loop 70s linear infinite", willChange: "transform" }}>
+        <div
+          className="flex h-full"
+          style={{
+            animation: "marquee-loop 70s linear infinite",
+            willChange: "transform",
+          }}
+        >
           {STRIP.map((slot, i) => (
             <PhotoSlot key={`${slot.slug}-${i}`} {...slot} />
           ))}
@@ -48,7 +60,9 @@ export function HeroCollage() {
             </Link>
           </div>
           <div className="col-span-12 md:col-span-8">
-            <h2 className="font-display display-xl fade-up text-right font-bold tracking-tight text-coin">PAY FAIRLY</h2>
+            <h2 className="font-display display-xl fade-up text-right font-bold tracking-tight text-coin">
+              PAY FAIRLY
+            </h2>
           </div>
         </div>
       </div>

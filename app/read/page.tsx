@@ -8,6 +8,7 @@ import { coverFor } from "@/lib/covers";
 import { getLast } from "@/lib/reading";
 import { AccountNav } from "@/components/AccountNav";
 import { Loading } from "@/components/Loading";
+import EmptyState from "@/components/EmptyState";
 import { useCachedFetch } from "@/lib/use-cached-fetch";
 
 const PAGE_SIZE = 12;
@@ -135,7 +136,7 @@ function Discovery() {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="font-display display-md font-semibold">Discover</h1>
-            <p className="mt-1 text-[var(--color-muted)]">Read anything. Value flows to creators automatically after each session.</p>
+            <p className="mt-1 text-[var(--color-muted)]">Read anything. After each session, a few cents go to the creators you read.</p>
           </div>
           {/* <SearchBox value={query} onChange={setQuery} /> */}
         </div>
@@ -146,7 +147,12 @@ function Discovery() {
           <section className="space-y-5">
             <SectionHead title={`Results for “${query.trim()}”`} />
             {browse.length === 0 ? (
-              <p className="text-sm text-[var(--color-muted)]">No series match that search.</p>
+              <EmptyState
+                variant="inline"
+                icon={<Search size={26} strokeWidth={1.5} />}
+                title="No matches"
+                description={`Nothing matched “${query.trim()}”. Try a different title, author, or genre.`}
+              />
             ) : (
               <>
                 <BrowseList items={pageItems} />
@@ -210,10 +216,17 @@ function Discovery() {
               <SectionHead
                 title="Trending this week"
                 icon={TrendingUp}
-                note="Ranked by genuine reader engagement — session depth & completion. Never paid placement."
+                note="Ranked by real reader engagement: reading depth and completion. Never paid placement."
               />
               {trending.length === 0 ? (
-                <EmptyState />
+                <EmptyState
+                  variant="inline"
+                  icon={<BookText size={26} strokeWidth={1.5} />}
+                  title="No series yet"
+                  description="Be the first to publish a story on Charon."
+                  actionHref="/creator"
+                  actionLabel="Publish the first one"
+                />
               ) : (
                 <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
                   {trending.map((s, i) => (
@@ -228,7 +241,7 @@ function Discovery() {
                 <SectionHead
                   title="Recommended for you"
                   icon={Sparkles}
-                  note="Powered by Agent 4 — learns from your genres, binge patterns & completion."
+                  note="Powered by Agent 4. It learns from your genres, what you binge, and what you finish."
                 />
                 <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
                   {recommended.map((s) => (
@@ -272,7 +285,7 @@ function Discovery() {
                   </div>
                 </div>
                 {browse.length === 0 ? (
-                  <p className="text-sm text-[var(--color-muted)]">Nothing in this genre yet.</p>
+                  <EmptyState variant="inline" title="Nothing in this genre yet" />
                 ) : (
                   <>
                     <BrowseList items={pageItems} rankFrom={sort === "ranked" ? (safePage - 1) * PAGE_SIZE : null} />
@@ -513,14 +526,5 @@ function PosterGridSkeleton() {
         ))}
       </div>
     </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <p className="text-sm text-[var(--color-muted)]">
-      No series yet.{" "}
-      <Link href="/creator" className="text-[var(--color-gold)]">Publish the first one →</Link>
-    </p>
   );
 }

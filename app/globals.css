@@ -80,6 +80,24 @@ a {
   text-decoration: none;
 }
 
+/* Interactive elements get a pointer cursor; disabled ones signal not-allowed. */
+button,
+[role="button"],
+summary,
+label[for],
+select,
+.btn-coin,
+.btn-outline {
+  cursor: pointer;
+}
+button:disabled,
+[role="button"][aria-disabled="true"],
+button[aria-disabled="true"],
+.btn-coin:disabled,
+.btn-outline:disabled {
+  cursor: not-allowed;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--color-gold) 35%, transparent);
 }

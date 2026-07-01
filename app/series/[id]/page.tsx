@@ -15,6 +15,7 @@ import { supabaseServerAuth } from "@/lib/supabase-server";
 import { PaymentModes } from "@/components/PaymentModes";
 import { SeriesTabs } from "@/components/SeriesTabs";
 import { LibraryButton } from "@/components/LibraryButton";
+import EmptyState from "@/components/EmptyState";
 import { TipJar } from "@/components/TipJar";
 import { AppHeader } from "@/components/AppHeader";
 import { estimatedReadMinutes } from "@/lib/pricing";
@@ -268,9 +269,7 @@ export default async function SeriesPage({
           }
           contents={
             chapters.length === 0 ? (
-              <p className="text-sm text-[var(--color-muted)]">
-                No chapters published yet.
-              </p>
+              <EmptyState variant="inline" title="No chapters published yet" description="Check back soon. New chapters will appear here." />
             ) : (
               <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)]">
                 {chapters.map((c) => (

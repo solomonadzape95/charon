@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { Pagination } from "@/components/admin/Pagination";
+import EmptyState from "@/components/EmptyState";
 
 interface Row {
   id: string;
@@ -80,7 +81,7 @@ export default function AdminUsers() {
           <tbody>
             {rows.map((u) => (
               <tr key={u.id} className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
-                <td className="max-w-[16rem] truncate px-4 py-3">{u.email ?? "—"}</td>
+                <td className="max-w-[16rem] truncate px-4 py-3">{u.email ?? "No email"}</td>
                 <td className="tabular px-4 py-3 font-semibold text-[var(--color-gold)]">${Number(u.balance_usd).toFixed(2)}</td>
                 <td className="tabular px-4 py-3 text-[var(--color-muted)]">${Number(u.session_cap_usd).toFixed(2)}</td>
                 <td className="px-4 py-3 text-utility text-[var(--color-muted)]">{new Date(u.created_at).toLocaleDateString()}</td>
@@ -93,7 +94,7 @@ export default function AdminUsers() {
             ))}
           </tbody>
         </table>
-        {!loading && rows.length === 0 && <p className="px-4 py-6 text-sm text-[var(--color-muted)]">No readers found.</p>}
+        {!loading && rows.length === 0 && <EmptyState variant="inline" title="No readers found" />}
         {loading && <p className="px-4 py-6 text-sm text-[var(--color-muted)]">Loading…</p>}
       </div>
 

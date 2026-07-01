@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Upload, ArrowUp, ArrowDown, Pencil, Trash2, Ticket, Clock, Share2, Check, Eye } from "lucide-react";
 import { coverFor } from "@/lib/covers";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import EmptyState from "@/components/EmptyState";
 import { CrossPostModal } from "@/components/CrossPostModal";
 import { AnnouncementsManager } from "@/components/AnnouncementsManager";
 import { CoverUpload } from "@/components/ImageUpload";
@@ -193,7 +194,7 @@ export default function SeriesManagement({ params }: { params: Promise<{ seriesI
               <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="charon-input" placeholder="Title" />
               <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="charon-input h-24 resize-none" placeholder="Description" />
               <div className="flex flex-wrap gap-3">
-                <input value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })} className="charon-input flex-1" placeholder="Genres — comma separated (fantasy, litrpg, system)" />
+                <input value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })} className="charon-input flex-1" placeholder="Genres, comma separated (fantasy, litrpg, system)" />
                 <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as "ongoing" | "completed" })} className="charon-input w-40">
                   <option value="ongoing">Ongoing</option>
                   <option value="completed">Completed</option>
@@ -234,7 +235,7 @@ export default function SeriesManagement({ params }: { params: Promise<{ seriesI
         <OfferCard
           icon={Ticket}
           title="Series Pass"
-          blurb="One payment, permanent access to every current and future chapter — priced at 85% of the full per-chapter cost."
+          blurb="One payment for permanent access to every current and future chapter. Priced at 85% of the full per-chapter cost."
           price={series.passPrice}
           suggested={data.suggestedPassPrice}
           countLabel="Passes sold"
@@ -289,7 +290,12 @@ export default function SeriesManagement({ params }: { params: Promise<{ seriesI
         </div>
 
         {chapters.length === 0 ? (
-          <p className="text-sm text-[var(--color-muted)]">No chapters yet.</p>
+          <EmptyState
+            title="No chapters yet"
+            description="Publish your first chapter to start building this series."
+            actionHref={`/creator/${series.slug ?? series.id}/upload`}
+            actionLabel="Add a chapter"
+          />
         ) : (
           <div className="divide-y divide-[var(--color-border)] border border-[var(--color-border)]">
             {chapters.map((c) => (
@@ -345,8 +351,8 @@ export default function SeriesManagement({ params }: { params: Promise<{ seriesI
         )}
 
         <p className="text-xs text-[var(--color-muted)]">
-          Prices are set live by the repricing agent within a floor and a ±20%/day cap. Override a price when you upload a
-          chapter.
+          An agent updates prices automatically. It stays above a set minimum and never changes a price by more than 20% in
+          a day. You can set your own price when you upload a chapter.
         </p>
       </section>
       </div>
@@ -420,7 +426,7 @@ function OfferCard({
         <>
           <div className="flex items-end justify-between border-t border-[var(--color-border)] pt-3">
             <div>
-              <p className="text-utility text-[var(--color-muted)]">{price != null ? "Your price" : "Agent 2 suggests"}</p>
+              <p className="text-utility text-[var(--color-muted)]">{price != null ? "Your price" : "Suggested price"}</p>
               <p className="font-display text-2xl font-bold text-coin">${(price ?? suggested).toFixed(2)}</p>
             </div>
             <div className="text-right">

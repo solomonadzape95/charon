@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Search, Copy, Check, Wallet, Coins, CheckCircle2, CircleSlash, Link2, X } from "lucide-react";
 import { Pagination } from "@/components/admin/Pagination";
+import EmptyState from "@/components/EmptyState";
 
 interface Row {
   id: string;
@@ -92,7 +93,7 @@ export default function AdminCreators() {
         {rows.map((c) => (
           <CreatorCard key={c.id} c={c} act={act} />
         ))}
-        {rows.length === 0 && <p className="text-sm text-[var(--color-muted)]">No creators found.</p>}
+        {rows.length === 0 && <EmptyState variant="inline" title="No creators found" />}
       </div>
 
       <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />

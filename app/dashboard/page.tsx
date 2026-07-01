@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PenLine, PenTool, ArrowRight, Plus, ExternalLink, Check, Clock, RotateCcw, XCircle, BookOpen } from "lucide-react";
 import { AccountNav } from "@/components/AccountNav";
+import EmptyState from "@/components/EmptyState";
 import { resolveCreatorId, getCreatorId } from "@/lib/account";
 import { setMode } from "@/lib/mode";
 
@@ -206,10 +207,13 @@ export default function Dashboard() {
           </Link>
         </div>
         {sessions.length === 0 ? (
-          <div className="border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
-            <p className="text-sm text-[var(--color-muted)]">No sessions yet — your reading history shows up here.</p>
-            <Link href="/read" className="btn-coin mt-4">Start reading</Link>
-          </div>
+          <EmptyState
+            icon={<Clock size={26} strokeWidth={1.5} />}
+            title="No sessions yet"
+            description="Your reading history shows up here once you start a story."
+            actionHref="/read"
+            actionLabel="Start reading"
+          />
         ) : (
           <ul className="space-y-2">
             {recentSessions.map((s) => (
@@ -228,7 +232,7 @@ export default function Dashboard() {
             <div>
               <h2 className="font-display text-xl font-semibold">Your creator studio</h2>
               <p className="mt-1 max-w-xl text-sm text-[var(--color-muted)]">
-                Earnings, audience and series live in a separate space — switch over to manage your work without ever
+                Earnings, audience and series live in a separate space. Switch over to manage your work without ever
                 touching your reading balance.
               </p>
             </div>
@@ -244,7 +248,7 @@ export default function Dashboard() {
             <h2 className="font-display text-xl font-semibold text-[var(--color-ink)]">Write on Charon</h2>
           </div>
           <p className="max-w-xl text-sm text-[var(--color-muted)]">
-            Publish your series and get paid per chapter, per reader — in real time. Keep 95%, withdraw anytime. Your
+            Publish your series and get paid per chapter, per reader, in real time. Keep 95%, withdraw anytime. Your
             reading account stays exactly as it is.
           </p>
           <Link href="/creator/onboarding" className="btn-coin">
@@ -310,7 +314,7 @@ function SessionItem({ s }: { s: SessionRow }) {
                 {s.tx ? "Verify on Arc" : "Gateway settlement"} · {(s.tx ?? s.ref ?? "").slice(0, 8)} <ExternalLink size={11} />
               </a>
             ) : (
-              <span className="text-utility text-[var(--color-muted)]">Settled · ref {s.ref ? s.ref.slice(0, 8) : "—"}</span>
+              <span className="text-utility text-[var(--color-muted)]">Settled · ref {s.ref ? s.ref.slice(0, 8) : "n/a"}</span>
             )}
           </div>
         );

@@ -7,12 +7,12 @@ import { BigFooter } from "@/components/landing/BigFooter";
 import { ReviewForm } from "@/components/ReviewForm";
 
 const MARQUEE = [
-  "NANOPAYMENTS",
+  "TINY PAYMENTS",
   "SETTLED ON ARC",
   "NO SUBSCRIPTION",
   "PAY PER CHAPTER",
   "READ FREELY",
-  "CREATORS KEEP IT",
+  "CREATORS KEEP 95%",
   "USDC · x402",
 ];
 
@@ -20,13 +20,13 @@ const DIFF = [
   {
     icon: "/per-read.svg",
     title: "Pay per read",
-    body: "No subscription. You pay for the chapters you actually read, scaled to how deeply you engaged.",
+    body: "No subscription. You pay for the chapters you read, scaled to how deeply you engaged.",
     old: "Subscriptions charge the skimmer and the superfan the same.",
   },
   {
     icon: "/prices.svg",
     title: "Living prices",
-    body: "Every chapter re-prices from real demand and reader behaviour — gently, capped at 20% a day.",
+    body: "Every chapter re-prices from real demand and reader behaviour. The change is gentle, capped at 20% a day.",
     old: "Fixed prices ignore what readers love or skip.",
   },
   {
@@ -37,8 +37,8 @@ const DIFF = [
   },
   {
     icon: "/creators.svg",
-    title: "Creators keep it",
-    body: "Earnings hit the creator's wallet per chapter, in real time. A small settlement fee, nothing else.",
+    title: "Creators keep 95%",
+    body: "Earnings reach the creator's wallet per chapter, in real time. The only fee is Charon's flat 5%.",
     old: "Royal Road sends readers to Patreon. Webtoon and WebNovel take the rest.",
   },
   {
@@ -50,28 +50,28 @@ const DIFF = [
   {
     icon: "/uninterrupted.svg",
     title: "No interruptions",
-    body: "Never stopped mid-chapter to buy coins. Read now; value flows after.",
+    body: "Never stopped mid-chapter to buy coins. Read now; a few cents go to the author after.",
     old: "Coin-gated apps break the story to sell you tokens.",
   },
 ];
 
 const STEPS = [
-  { n: "01", title: "Deposit once", body: "Add USDC with a card or wallet. Circle handles the onramp — no coins to buy." },
+  { n: "01", title: "Deposit once", body: "Add money with a card or wallet. Circle does the conversion. No coins to buy." },
   { n: "02", title: "Read anything", body: "Open any chapter. The agent quietly notes how you engage." },
-  { n: "03", title: "Creators get paid", body: "A fair nanopayment settles to every creator you read — on Arc, instantly." },
+  { n: "03", title: "Creators get paid", body: "A fair, tiny payment reaches every creator you read, instantly." },
 ];
 
 const PROBLEMS = [
   {
     n: "01",
-    title: "Paywalls kill the story",
-    body: "Hit a wall mid-chapter and most readers just leave. “Buy 100 coins to continue” is where good stories go to die.",
+    title: "Coin walls kill the story",
+    body: "Stop a reader mid-chapter to buy coins and most of them just leave. “Buy 100 coins to continue” is where good stories go to die.",
     tag: "Readers walk away",
   },
   {
     n: "02",
     title: "One price fits no one",
-    body: "A flat subscription charges the skimmer and the superfan the same — and pays the author who hooked you the same as the one you abandoned.",
+    body: "A flat subscription charges the skimmer and the superfan the same. It pays the author who hooked you the same as the one you abandoned.",
     tag: "The unit is wrong",
   },
   {
@@ -92,7 +92,10 @@ export default function Home() {
       <section className="overflow-hidden border-b border-[var(--color-border)] py-5">
         <div className="flex w-max marquee-text">
           {[...MARQUEE, ...MARQUEE].map((w, i) => (
-            <span key={i} className="text-utility flex items-center text-[var(--color-muted)]">
+            <span
+              key={i}
+              className="text-utility flex items-center text-[var(--color-muted)]"
+            >
               <span className="px-6">{w}</span>
               <span className="text-[var(--color-gold)]">✦</span>
             </span>
@@ -104,14 +107,19 @@ export default function Home() {
       <section className="border-b border-[var(--color-border)]">
         <div className="mx-auto max-w-[88rem] px-6 py-24 lg:px-10">
           <div className="max-w-3xl">
-            <p className="text-utility mb-4 text-[var(--color-gold)]">The problem</p>
+            <p className="text-utility mb-4 text-[var(--color-gold)]">
+              The problem
+            </p>
             <h2 className="font-display display-md font-semibold">
-              Reading online is a bad deal — for the people reading <span className="text-coin">and</span> the people writing.
+              Reading online is a bad deal, for the people reading{" "}
+              <span className="text-coin">and</span> the people writing.
             </h2>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--color-muted)]">
-              Paywalls break the very stories they’re protecting. Flat subscriptions price everyone wrong.
-              And the platforms in the middle keep most of the money. Nobody is paid for what a chapter is
-              actually worth — because nobody could charge a few cents for one. Until now.
+              Coin bundles and “buy to continue” walls break the very stories
+              they’re protecting. Flat subscriptions charge everyone the same
+              wrong price. And the platforms in the middle keep most of the
+              money. Nobody is paid for what a chapter is worth, because nobody
+              could charge a few cents for one. Until now.
             </p>
           </div>
 
@@ -121,9 +129,15 @@ export default function Home() {
                 key={p.n}
                 className="group relative flex flex-col bg-[var(--color-surface)] p-8 transition-colors hover:bg-[var(--color-surface-2)]"
               >
-                <span className="font-display text-6xl font-bold leading-none text-coin opacity-90">{p.n}</span>
-                <h3 className="font-display mt-6 text-2xl font-semibold">{p.title}</h3>
-                <p className="mt-2 flex-1 text-[var(--color-muted)]">{p.body}</p>
+                <span className="font-display text-6xl font-bold leading-none text-coin opacity-90">
+                  {p.n}
+                </span>
+                <h3 className="font-display mt-6 text-2xl font-semibold">
+                  {p.title}
+                </h3>
+                <p className="mt-2 flex-1 text-[var(--color-muted)]">
+                  {p.body}
+                </p>
                 <p className="text-utility mt-6 inline-flex w-fit items-center gap-2 text-[var(--color-gold)]">
                   <span className="h-px w-6 bg-[var(--color-gold)]" />
                   {p.tag}
@@ -133,8 +147,12 @@ export default function Home() {
           </div>
 
           <p className="mt-10 max-w-2xl text-lg text-[var(--color-muted)]">
-            <span className="text-[var(--color-ink)]">Charon fixes the unit.</span> Read freely, and a tiny, fair
-            payment settles per chapter — on rails finally cheap enough to make it work.
+            <span className="text-[var(--color-ink)]">
+              Charon fixes the unit.
+            </span>{" "}
+            Read freely, and a tiny, fair payment reaches the creator for each
+            chapter. The cost of sending it is finally low enough to make this
+            work.
           </p>
         </div>
       </section>
@@ -143,9 +161,12 @@ export default function Home() {
       <section className="mx-auto max-w-[88rem] px-6 lg:px-10">
         <div className="grid gap-10 py-20 md:grid-cols-12">
           <div className="md:col-span-4 md:sticky md:top-28 md:self-start">
-            <p className="text-utility mb-4 text-[var(--color-gold)]">The difference</p>
+            <p className="text-utility mb-4 text-[var(--color-gold)]">
+              The difference
+            </p>
             <h2 className="font-display display-md font-semibold">
-              Every platform makes you choose a flat fee or ads. We fixed the unit.
+              Every platform makes you choose a flat fee or ads. We fixed the{" "}
+              <span className="text-coin">unit</span>.
             </h2>
           </div>
           <div className="md:col-span-8 gap-2">
@@ -171,9 +192,15 @@ export default function Home() {
                   />
                 </div>
                 <div className="py-8">
-                  <h3 className="font-display text-2xl font-semibold md:text-3xl">{d.title}</h3>
-                  <p className="mt-2 max-w-xl text-[var(--color-muted)]">{d.body}</p>
-                  <p className="mt-3 text-sm text-[var(--color-muted)]/70">— {d.old}</p>
+                  <h3 className="font-display text-2xl font-semibold md:text-3xl">
+                    {d.title}
+                  </h3>
+                  <p className="mt-2 max-w-xl text-[var(--color-muted)]">
+                    {d.body}
+                  </p>
+                  <p className="mt-3 text-sm text-[var(--color-muted)]/70">
+                    {d.old}
+                  </p>
                 </div>
               </div>
             ))}
@@ -184,17 +211,25 @@ export default function Home() {
       {/* How it works — three numbered columns split by hairlines */}
       <section className="border-y border-[var(--color-border)] bg-[var(--color-surface)]">
         <div className="mx-auto max-w-[88rem] px-6 py-20 lg:px-10">
-          <p className="text-utility mb-12 text-[var(--color-gold)]">How it works</p>
+          <p className="text-utility mb-12 text-[var(--color-gold)]">
+            How it works
+          </p>
           <div className="grid md:grid-cols-3">
             {STEPS.map((s, i) => (
               <div
                 key={s.n}
                 className={`flex flex-col gap-4 py-2 md:px-10 md:first:pl-0 ${
-                  i > 0 ? "border-t border-[var(--color-border)] pt-10 md:border-l md:border-t-0 md:pt-2" : ""
+                  i > 0
+                    ? "border-t border-[var(--color-border)] pt-10 md:border-l md:border-t-0 md:pt-2"
+                    : ""
                 }`}
               >
-                <span className="font-display text-6xl font-bold text-coin">{s.n}</span>
-                <h3 className="font-display text-2xl font-semibold">{s.title}</h3>
+                <span className="font-display text-6xl font-bold text-coin">
+                  {s.n}
+                </span>
+                <h3 className="font-display text-2xl font-semibold">
+                  {s.title}
+                </h3>
                 <p className="text-[var(--color-muted)]">{s.body}</p>
               </div>
             ))}
@@ -206,13 +241,21 @@ export default function Home() {
       <AuthorsBand />
 
       {/* Feedback / reviews */}
-      <section id="feedback" className="border-y border-[var(--color-border)] bg-[var(--color-surface)]">
+      <section
+        id="feedback"
+        className="border-y border-[var(--color-border)] bg-[var(--color-surface)]"
+      >
         <div className="mx-auto max-w-2xl px-6 py-20 lg:px-10">
-          <p className="text-utility mb-3 text-[var(--color-gold)]">Tell us what you think</p>
-          <h2 className="font-display display-md mb-3 font-semibold">Charon is in testnet beta.</h2>
+          <p className="text-utility mb-3 text-[var(--color-gold)]">
+            Tell us what you think
+          </p>
+          <h2 className="font-display display-md mb-3 font-semibold">
+            Charon is in testnet beta.
+          </h2>
           <p className="mb-8 text-[var(--color-muted)]">
-            We&apos;re building this in the open. What works, what&apos;s confusing, what would make you
-            read (or publish) here? A line or two helps a lot.
+            We&apos;re building this in the open. What works, what&apos;s
+            confusing, what would make you read (or publish) here? A line or two
+            helps a lot.
           </p>
           <ReviewForm />
         </div>
@@ -220,10 +263,20 @@ export default function Home() {
 
       {/* Closing — CTA image as a grayed-out background */}
       <section className="relative flex min-h-[60vh] items-center overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-surface)]">
-        <SafeImage src="/cta.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25 grayscale" />
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[color-mix(in_srgb,var(--color-bg)_82%,transparent)] to-[color-mix(in_srgb,var(--color-bg)_68%,transparent)]" />
+        <SafeImage
+          src="/cta.png"
+          alt=""
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25 grayscale"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[color-mix(in_srgb,var(--color-bg)_82%,transparent)] to-[color-mix(in_srgb,var(--color-bg)_68%,transparent)]"
+        />
         <div className="relative z-10 mx-auto flex w-full max-w-[88rem] flex-col items-center gap-6 px-6 py-24 text-center lg:px-10">
-          <h2 className="font-display display-md max-w-2xl font-semibold">Every chapter, paid the moment it&apos;s read.</h2>
+          <h2 className="font-display display-md max-w-2xl font-semibold">
+            <span className="text-coin">Every</span>{" "} chapter, paid the moment
+            it&apos;s read.
+          </h2>
           <div className="flex flex-wrap justify-center gap-3">
             <Link href="/read" className="btn-coin">
               Start reading

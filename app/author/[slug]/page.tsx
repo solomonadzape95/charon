@@ -4,6 +4,7 @@ import { BookOpen, Users, PenTool } from "lucide-react";
 import { getCreatorBySlug, listSeriesForCreator } from "@/lib/db";
 import { supabaseService } from "@/lib/supabase";
 import { AppHeader } from "@/components/AppHeader";
+import EmptyState from "@/components/EmptyState";
 import { coverFor } from "@/lib/covers";
 
 export const dynamic = "force-dynamic";
@@ -71,7 +72,7 @@ export default async function AuthorPage({ params }: { params: Promise<{ slug: s
         <section className="space-y-5">
           <h2 className="font-display text-2xl font-semibold">{creator.name ? `${creator.name}'s series` : "Series"}</h2>
           {series.length === 0 ? (
-            <p className="text-[var(--color-muted)]">No published series yet.</p>
+            <EmptyState title="No published series yet" description="When this author publishes, their stories will appear here." />
           ) : (
             <div className="grid grid-cols-2 gap-x-5 gap-y-7 sm:grid-cols-4">
               {series.map((s) => (

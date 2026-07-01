@@ -84,8 +84,8 @@ export default function Onboarding() {
           <p className="text-utility text-[var(--color-gold)]">Welcome to Charon</p>
           <h1 className="font-display display-md mt-2 font-semibold">How Charon works</h1>
           <p className="mt-4 max-w-xl text-lg leading-relaxed text-[var(--color-muted)]">
-            No coins. No subscriptions. No paywall mid-chapter. You just read — and the creator gets paid a fair amount
-            automatically, the moment you finish.
+            No coins. No subscriptions. Nothing to buy mid-chapter. You read, and the creator gets paid a fair
+            amount automatically the moment you finish.
           </p>
 
           <ol className="mt-10 divide-y divide-[var(--color-border)] border border-[var(--color-border)]">
@@ -93,19 +93,19 @@ export default function Onboarding() {
               n="01"
               icon={BookOpen}
               title="You read"
-              desc="Open any chapter and read. Nothing interrupts you — no prompts, no coin meter ticking down."
+              desc="Open any chapter and read. Nothing interrupts you: no prompts, no coin meter ticking down."
             />
             <StepRow
               n="02"
               icon={Activity}
               title="We measure the read"
-              desc="An AI agent quietly gauges how deeply you engaged — time spent, how much you finished, what you re-read."
+              desc="An AI helper quietly measures how deeply you engaged: time spent, how much you finished, what you re-read."
             />
             <StepRow
               n="03"
               icon={Coins}
               title="The creator is paid"
-              desc="A fair USDC nanopayment settles to them on Arc, automatically. You only pay for what you actually read."
+              desc="A fair, tiny payment in USDC (a digital dollar) reaches the creator automatically. You only pay for what you read."
               accent
             />
           </ol>
@@ -121,10 +121,11 @@ export default function Onboarding() {
       {/* ── Step 2 — add funds ── */}
       {step === 1 && (
         <section className="fade-up flex flex-1 flex-col">
-          <p className="text-utility text-[var(--color-gold)]">Step 2 — Add funds</p>
+          <p className="text-utility text-[var(--color-gold)]">Step 2 · Add funds</p>
           <h1 className="font-display display-md mt-2 font-semibold">Top up to read</h1>
           <p className="mt-3 text-[var(--color-muted)]">
-            Add USDC and you only spend it as you read — typically a few cents a chapter. Totally optional to start.
+            Add USDC (a digital dollar) and you only spend it as you read, usually a few cents a chapter. It is optional
+            to start.
           </p>
 
           {creditApplied && (
@@ -132,7 +133,7 @@ export default function Onboarding() {
               <Check size={18} className="shrink-0 text-[var(--color-accent-2)]" />
               <p className="text-sm">
                 We&apos;ve added <span className="font-semibold text-[var(--color-accent-2)]">${creditAmount.toFixed(2)}</span>{" "}
-                of free credit to get you started — enough to read right now.
+                of free credit to get you started. It is enough to read right now.
               </p>
             </div>
           )}
@@ -164,7 +165,7 @@ export default function Onboarding() {
       {/* ── Step 3 — pick a series ── */}
       {step === 2 && (
         <section className="fade-up flex flex-1 flex-col">
-          <p className="text-utility text-[var(--color-gold)]">Step 3 — Start reading</p>
+          <p className="text-utility text-[var(--color-gold)]">Step 3 · Start reading</p>
           <h1 className="font-display display-md mt-2 font-semibold">Pick your first series</h1>
           <p className="mt-3 text-[var(--color-muted)]">Tap one to dive straight in. You can always browse more later.</p>
 

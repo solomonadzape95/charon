@@ -349,7 +349,7 @@ export function ChapterReader(props: Props) {
           >
             <Eye size={16} className="shrink-0 text-[var(--color-gold)]" />
             <span>
-              <span className="font-semibold">Author preview.</span> This is your own work — reading it is always free and
+              <span className="font-semibold">Author preview.</span> This is your own work. Reading it is always free and
               never opens a paid session.
             </span>
           </div>
@@ -357,7 +357,7 @@ export function ChapterReader(props: Props) {
         {!props.owner && props.alreadyPaid && (
           <div className="mb-8 flex items-center gap-3 px-4 py-3 text-sm" style={{ border: `1px solid ${theme.line}`, color: theme.chrome }}>
             <BookmarkCheck size={16} className="shrink-0" />
-            <span>You own this chapter — re-reading it is free.</span>
+            <span>You own this chapter. Re-reading it is free.</span>
           </div>
         )}
         {props.guest && (
@@ -418,7 +418,7 @@ export function ChapterReader(props: Props) {
             <input
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="Leave a note (optional — the agent weighs this)…"
+              placeholder="Leave a note (optional, the agent reads this)…"
               className="w-full bg-transparent px-3 py-2 text-sm outline-none"
               style={{ border: `1px solid ${theme.line}`, color: theme.fg }}
             />

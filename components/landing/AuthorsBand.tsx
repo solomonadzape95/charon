@@ -70,7 +70,7 @@ export function AuthorsBand() {
       <div className="pointer-events-none relative z-10 mx-auto flex h-full max-w-[88rem] flex-col justify-between px-6 py-14 lg:px-10">
         <p className="text-utility text-[#1a1304]/70">Back the writers you love</p>
         <p className="max-w-md text-lg text-[#1a1304]/85 sm:text-xl">
-          Every coin goes to the author, per chapter — no middle cut. Follow them, and your reading keeps them writing.
+          Every coin goes to the author, per chapter. No middle cut. Follow them, and your reading keeps them writing.
         </p>
       </div>
 

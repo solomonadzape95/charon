@@ -57,7 +57,7 @@ export function PaymentModes({ seriesId, status, firstChapterId, passPrice, preR
         const d = await res.json();
         if (res.ok) {
           setMode("series_unlock");
-          setMsg(`Unlocked for $${Number(d.amount).toFixed(2)} — read it all, no per-chapter charge.`);
+          setMsg(`Unlocked for $${Number(d.amount).toFixed(2)}. Read it all, no per-chapter charge.`);
         } else {
           setMsg(d.error ?? "Couldn't unlock this series.");
           setSelected(mode ?? "standard");
@@ -85,13 +85,13 @@ export function PaymentModes({ seriesId, status, firstChapterId, passPrice, preR
 
   // Only surface offers the creator actually configured. Standard is always on.
   const modes: { id: string; icon: typeof Coins; title: string; desc: string; price: string }[] = [
-    { id: "standard", icon: Coins, title: "Read as you go", desc: "Pay per session, valued by the agent on how deeply you engage.", price: "agent-valued" },
+    { id: "standard", icon: Coins, title: "Read as you go", desc: "Pay per chapter, automatically, based on how much you actually read. No commitment.", price: "a few cents" },
   ];
   if (passPrice != null) {
-    modes.push({ id: "series_unlock", icon: Ticket, title: "Series Pass", desc: "One price, permanent access — including future chapters.", price: `$${passPrice.toFixed(2)}` });
+    modes.push({ id: "series_unlock", icon: Ticket, title: "Series Pass", desc: "One payment. Every chapter, including future ones, yours forever. Usually cheaper than paying per chapter.", price: `$${passPrice.toFixed(2)}` });
   }
   if (preReleasePrice != null) {
-    modes.push({ id: "pre_release", icon: Clock, title: "Pre-release", desc: "Auto-pay when new chapters drop, before they're public.", price: `$${preReleasePrice.toFixed(2)}/drop` });
+    modes.push({ id: "pre_release", icon: Clock, title: "Pre-release", desc: "Get new chapters the moment they publish, automatically, before anyone else.", price: `$${preReleasePrice.toFixed(2)}/drop` });
   }
 
   return (

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Star, Mail, Check, Archive, RotateCcw } from "lucide-react";
 import { Pagination } from "@/components/admin/Pagination";
+import EmptyState from "@/components/EmptyState";
 
 interface Review {
   id: string;
@@ -130,7 +131,7 @@ export default function AdminReviews() {
             </div>
           </div>
         ))}
-        {rows.length === 0 && !needsMigration && <p className="text-sm text-[var(--color-muted)]">No reviews yet.</p>}
+        {rows.length === 0 && !needsMigration && <EmptyState variant="inline" title="No reviews yet" />}
       </div>
 
       <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />

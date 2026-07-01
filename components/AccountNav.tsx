@@ -130,10 +130,12 @@ export function AccountNav() {
           aria-label="Charon"
         >
           <Logo size={32} className="text-[var(--color-gold)]" />
-          <span className="font-display hidden text-2xl font-semibold tracking-tight text-coin sm:inline">
-            Charon
+          <span className="hidden flex-col leading-none sm:flex">
+            <span className="font-display text-2xl font-semibold leading-none tracking-tight text-coin">
+              Charon
+            </span>
+            <BetaBadge className="mt-0.5" />
           </span>
-          <BetaBadge className="mt-0.5 self-start" />
         </Link>
 
         {/* Search — opens the command palette */}

@@ -60,7 +60,7 @@ export function CrossPostPanel({ chapterId, html }: { chapterId: string; html: s
     <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
       <h2 className="font-display text-xl font-semibold">Cross-post this chapter</h2>
       <p className="mt-1 text-sm text-[var(--color-muted)]">
-        Copy a platform-ready version and paste it into each site. Charon never logs in for you — you stay in control.
+        Copy a platform-ready version and paste it into each site. Charon never logs in for you. You stay in control.
       </p>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -104,7 +104,7 @@ export function CrossPostPanel({ chapterId, html }: { chapterId: string; html: s
 
               {note && (
                 <p className="border-t border-[var(--color-border)] pt-2 text-[11px] leading-relaxed text-[var(--color-muted)]">
-                  Author note goes in {p.name}&apos;s separate field — copy includes the body only.
+                  Author note goes in {p.name}&apos;s separate field. The copy includes the body only.
                 </p>
               )}
             </div>

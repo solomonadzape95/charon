@@ -25,7 +25,7 @@ export function Pagination({
   return (
     <div className="flex items-center justify-between gap-3 text-utility text-[var(--color-muted)]">
       <span className="tabular">
-        {from.toLocaleString()}–{to.toLocaleString()} of {total.toLocaleString()}
+        {from.toLocaleString()} to {to.toLocaleString()} of {total.toLocaleString()}
       </span>
       <div className="flex items-center gap-2">
         <button type="button" onClick={() => onPage(page - 1)} disabled={page <= 1} className={btn} aria-label="Previous page">

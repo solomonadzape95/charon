@@ -37,12 +37,12 @@ type Step = {
 const STEPS: Step[] = [
   {
     title: "Welcome to Charon",
-    body: "Read webnovels and manga with no paywalls — then pay a tiny, fair amount per chapter. Here's the 60-second tour of the parts that aren't obvious.",
+    body: "Read webnovels and manga with no subscriptions and no coins. You pay a tiny, fair amount per chapter, after you read it. Here's the 60-second tour of the parts that aren't obvious.",
   },
   {
     sel: '[data-tour="beta"]',
     title: "This is a testnet beta",
-    body: "Everything settles on Arc testnet with test USDC — no real money moves yet. Deposit, read, and withdraw freely to try it.",
+    body: "Everything runs on Arc testnet with test USDC, so no real money moves yet. Deposit, read, and withdraw freely to try it.",
   },
   {
     title: "Read first, pay after",
@@ -50,7 +50,7 @@ const STEPS: Step[] = [
   },
   {
     sel: '[data-tour="price"]',
-    title: "Pay once per chapter — forever",
+    title: "Pay once per chapter, forever",
     body: "Each chapter is a few cents, and you only pay once. Re-reads are always free, and your own work (if you're a creator) is never charged.",
   },
   {
@@ -61,12 +61,12 @@ const STEPS: Step[] = [
   {
     sel: '[data-tour="mode-switch"]',
     title: "One account, two modes",
-    body: "Flip between Reading and Studio. Studio is where you publish chapters, set prices, and track earnings — same login.",
+    body: "Flip between Reading and Studio. Studio is where you publish chapters, set prices, and track earnings. Same login.",
   },
   {
     sel: '[data-tour="nav-agent"]',
     title: "An agent that reads for you",
-    body: "Give it a taste profile and a weekly budget, and it discovers, judges, and pays for chapters on your behalf — within budget, on its own.",
+    body: "Give it a taste profile and a weekly budget, and it discovers, judges, and pays for chapters on your behalf, within budget, on its own.",
   },
   {
     sel: '[data-tour="agent-budget"]',
@@ -75,18 +75,18 @@ const STEPS: Step[] = [
   },
   {
     sel: '[data-tour="agent-wallet"]',
-    title: "The agent has its own on-chain wallet",
-    body: "Each week it's funded with real test USDC on Arc — you can scan the address on arcscan and watch it spend. Unspent funds are returned automatically.",
+    title: "The agent has its own wallet",
+    body: "Each week it's funded with real test USDC on Arc. You can look up its address on arcscan and watch it spend. Unspent funds come back to you automatically.",
   },
   {
     sel: '[data-tour="agent-run"]',
     title: "Run it on demand",
-    body: "Hit Run now to watch a reading run happen live in the activity feed — or let the scheduled fleet run handle it.",
+    body: "Hit Run now to watch a reading run happen live in the activity feed. Or let the scheduled fleet run handle it.",
   },
   {
     sel: '[data-tour="wallet-deposit"]',
     title: "Deposit once, read for ages",
-    body: "Top up your balance with test USDC. Deposits are verified on-chain (on Arc) before they credit — the amount is read from the chain, never trusted from the page.",
+    body: "Top up your balance with test USDC. Deposits are checked on Arc before they count. The amount comes straight from Arc, never trusted from the page.",
   },
   {
     sel: '[data-tour="wallet-balance"]',
@@ -96,15 +96,15 @@ const STEPS: Step[] = [
   {
     sel: '[data-tour="reader-tabs"]',
     title: "Your reading surfaces",
-    body: "Discover new series, manage your Library, run your Agent, and handle your Wallet — all from here.",
+    body: "Discover new series, manage your Library, run your Agent, and handle your Wallet, all from here.",
   },
   {
     title: "Creators earn every chapter",
-    body: "Reads settle to the author as escrow that clears after a week, then they withdraw real USDC (or off-ramp to a bank). A creator with no account yet still earns — they just claim it later.",
+    body: "Each read is held for the author for a week, then they can withdraw real USDC (or send it to a bank). A creator with no account yet still earns. They just claim it later.",
   },
   {
     title: "That's the tour",
-    body: "Poke around — read a chapter, deposit some test USDC, or set up your agent. You can reopen this anytime from the compass button.",
+    body: "Poke around: read a chapter, deposit some test USDC, or set up your agent. You can reopen this anytime from the compass button.",
   },
 ];
 

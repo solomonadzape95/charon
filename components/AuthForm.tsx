@@ -136,7 +136,7 @@ export function AuthForm() {
       </p>
 
       {/* Demo accounts */}
-      <div className="mt-5 border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      {/* <div className="mt-5 border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
         <p className="text-utility text-[var(--color-muted)]">Demo accounts — tap to fill</p>
         <div className="mt-3 space-y-2">
           {DEMO.map((d) => (
@@ -154,7 +154,7 @@ export function AuthForm() {
           ))}
         </div>
         <p className="mt-2 text-xs text-[var(--color-muted)]">Password for both: charon-demo</p>
-      </div>
+      </div> */}
     </div>
   );
 }
@@ -191,7 +191,7 @@ export function AuthScreen({ expired }: { expired?: boolean }) {
         <div className="w-full max-w-sm">
           {expired && (
             <p className="mb-5 border border-[var(--color-gold)] bg-[color-mix(in_srgb,var(--color-gold)_10%,transparent)] px-4 py-3 text-sm text-[var(--color-ink)]">
-              Your session expired — sign in again to pick up where you left off.
+              Your session expired. Sign in again to pick up where you left off.
             </p>
           )}
           <AuthForm />

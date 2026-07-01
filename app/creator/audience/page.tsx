@@ -83,7 +83,7 @@ function Loaded({ data }: { data: Audience }) {
         <div className="bg-[var(--color-surface)] p-6">
           <p className="text-utility text-[var(--color-muted)]">Conversion to paying</p>
           <p className="font-display mt-1 text-3xl font-bold">{data.followerCount ? Math.round((paying / data.followerCount) * 100) : 0}%</p>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">Followers who&apos;ve settled at least one chapter.</p>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">Followers who&apos;ve paid for at least one chapter.</p>
         </div>
       </section>
 
@@ -92,7 +92,7 @@ function Loaded({ data }: { data: Audience }) {
         <h2 className="font-display text-2xl font-semibold">Top supporters</h2>
         {!supporters.length ? (
           <div className="border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
-            <p className="text-[var(--color-muted)]">No supporters yet — share your series to start earning.</p>
+            <p className="text-[var(--color-muted)]">No supporters yet. Share your series to start earning.</p>
             <Link href="/creator/studio" className="btn-outline mt-4 !py-2 !text-[0.72rem]">Back to studio</Link>
           </div>
         ) : (

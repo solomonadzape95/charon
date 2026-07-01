@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bookmark as BookmarkIcon, X, Plus, Check } from "lucide-react";
 import { AccountNav } from "@/components/AccountNav";
+import EmptyState from "@/components/EmptyState";
 import { coverFor } from "@/lib/covers";
 import { listBookmarks, removeBookmark, type Bookmark } from "@/lib/reading";
 import { useCachedFetch } from "@/lib/use-cached-fetch";
@@ -98,7 +99,7 @@ export default function LibraryPage() {
         <div>
           <h1 className="font-display display-md font-semibold">Your library</h1>
           <p className="mt-1 text-[var(--color-muted)]">
-            {library.length > 0 ? `${library.length} series you've added.` : "Series you add live here — add the ones you want to keep."}
+            {library.length > 0 ? `${library.length} series you've added.` : "Series you add live here. Add the ones you want to keep."}
           </p>
         </div>
 
@@ -112,10 +113,13 @@ export default function LibraryPage() {
           <>
             {/* The library — explicitly added */}
             {library.length === 0 ? (
-              <div className="border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
-                <p className="text-[var(--color-muted)]">Your library is empty. Add a series from its page, or from what you&apos;ve read below.</p>
-                <Link href="/read" className="btn-coin mt-4">Browse stories</Link>
-              </div>
+              <EmptyState
+                icon={<Plus size={26} strokeWidth={1.5} />}
+                title="Your library is empty"
+                description="Add a series from its page, or from what you've read below, to keep it here."
+                actionHref="/read"
+                actionLabel="Browse stories"
+              />
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-6">
@@ -133,7 +137,7 @@ export default function LibraryPage() {
                         </span>
                       </div>
                       <h3 className="font-display clamp-2 mt-2 text-sm font-semibold leading-tight group-hover:text-[var(--color-gold)]">{it.title}</h3>
-                      <p className="text-utility mt-0.5 text-[var(--color-muted)]">{it.chaptersRead > 0 ? `${it.chaptersRead} read` : (it.genre ?? "—")}</p>
+                      <p className="text-utility mt-0.5 text-[var(--color-muted)]">{it.chaptersRead > 0 ? `${it.chaptersRead} read` : (it.genre ?? "")}</p>
                     </Link>
                   ))}
                 </div>
@@ -149,7 +153,7 @@ export default function LibraryPage() {
                               <img src={coverFor(it.id, it.cover_image)} alt="" className="h-16 w-11 shrink-0 border border-[var(--color-border)] object-cover grayscale-[0.15]" />
                               <div className="min-w-0 flex-1">
                                 <p className="truncate font-medium">{it.title}</p>
-                                <p className="text-utility mt-0.5 text-[var(--color-muted)]">{it.genre ?? "—"}</p>
+                                <p className="text-utility mt-0.5 text-[var(--color-muted)]">{it.genre ?? ""}</p>
                               </div>
                               <span className="text-utility shrink-0 text-[var(--color-gold)]">{MODE_LABEL[it.mode] ?? it.mode}</span>
                               {it.chaptersRead > 0 && <span className="text-utility hidden shrink-0 text-[var(--color-muted)] sm:inline">{it.chaptersRead} read</span>}
@@ -179,7 +183,7 @@ export default function LibraryPage() {
                         <img src={coverFor(it.id, it.cover_image)} alt="" className="h-16 w-11 shrink-0 border border-[var(--color-border)] object-cover grayscale-[0.15]" />
                         <div className="min-w-0">
                           <p className="truncate font-medium hover:text-[var(--color-gold)]">{it.title}</p>
-                          <p className="text-utility mt-0.5 text-[var(--color-muted)]">{it.chaptersRead} read · {it.genre ?? "—"}</p>
+                          <p className="text-utility mt-0.5 text-[var(--color-muted)]">{it.chaptersRead} read · {it.genre ?? ""}</p>
                         </div>
                       </Link>
                       <button
@@ -210,7 +214,7 @@ export default function LibraryPage() {
                 <li key={b.chapterId} className="flex items-center gap-3 bg-[var(--color-surface)] px-4 py-3">
                   <Link href={`/chapter/${b.chapterId}`} className="min-w-0 flex-1">
                     <p className="truncate font-medium hover:text-[var(--color-gold)]">{b.seriesTitle} · Ch {b.n}</p>
-                    <p className="text-utility mt-0.5 truncate text-[var(--color-muted)]">{b.title}{b.note ? ` — ${b.note}` : ""}</p>
+                    <p className="text-utility mt-0.5 truncate text-[var(--color-muted)]">{b.title}{b.note ? ` · ${b.note}` : ""}</p>
                   </Link>
                   <button
                     onClick={() => {

@@ -63,7 +63,7 @@ export function AnnouncementsManager({ creatorId, seriesId }: { creatorId: strin
           <Plus size={13} /> New
         </button>
       </div>
-      <p className="text-sm text-[var(--color-muted)]">Drop a note — readers see it at the top of your series page.</p>
+      <p className="text-sm text-[var(--color-muted)]">Drop a note. Readers see it at the top of your series page.</p>
 
       {composing && (
         <div className="space-y-3 border border-[var(--color-border)] bg-[var(--color-surface)] p-5">

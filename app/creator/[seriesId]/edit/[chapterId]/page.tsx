@@ -138,7 +138,7 @@ export default function EditChapterPage({ params }: { params: Promise<{ seriesId
           ]}
         />
         <h1 className="font-display display-md mt-2 font-semibold">Edit chapter</h1>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">Changes save in place. The repricing agent keeps the price within its floor and cap.</p>
+        <p className="mt-2 text-sm text-[var(--color-muted)]">Changes save in place. The agent keeps the price within its set limits.</p>
       </div>
 
       <input

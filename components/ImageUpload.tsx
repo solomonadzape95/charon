@@ -100,7 +100,7 @@ export function PanelUpload({
           </>
         ) : (
           <>
-            <ImagePlus size={16} /> Add panels (JPG / PNG — select multiple)
+            <ImagePlus size={16} /> Add panels (JPG / PNG, select multiple)
           </>
         )}
       </button>

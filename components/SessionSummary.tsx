@@ -66,7 +66,7 @@ export function SessionSummary({ result, onClose }: { result: SessionResult; onC
         {result.settled ? (
           <>
             <p className="font-display text-5xl font-bold text-[var(--color-gold)]">${result.amount.toFixed(2)}</p>
-            <p className="mt-1 text-sm text-[var(--color-muted)]">settled to {result.creator ?? "the creator"} on Arc</p>
+            <p className="mt-1 text-sm text-[var(--color-muted)]">paid to {result.creator ?? "the creator"} on Arc</p>
           </>
         ) : (
           <p className="text-xl font-semibold">Session saved</p>

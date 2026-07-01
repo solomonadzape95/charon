@@ -129,8 +129,8 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-          <Field label="Email" value={email ?? "—"} />
-          <Field label="Balance" value={user ? `$${Number(user.balance_usd).toFixed(2)}` : "—"} action={<Link href="/wallet" className="text-utility text-[var(--color-gold)]">Manage →</Link>} />
+          <Field label="Email" value={email ?? "n/a"} />
+          <Field label="Balance" value={user ? `$${Number(user.balance_usd).toFixed(2)}` : "n/a"} action={<Link href="/wallet" className="text-utility text-[var(--color-gold)]">Manage →</Link>} />
         </Section>
 
         {/* Appearance */}

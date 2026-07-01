@@ -133,7 +133,7 @@ export function CreatorOverview({ creatorId }: { creatorId: string }) {
           <h2 className="font-display text-2xl font-semibold">Live activity</h2>
         </div>
         {data.payments.length === 0 ? (
-          <p className="text-sm text-[var(--color-muted)]">No settlements yet — share your series to start earning.</p>
+          <p className="text-sm text-[var(--color-muted)]">Nothing earned yet. Share your series to start earning.</p>
         ) : (
           <ul className="divide-y divide-[var(--color-border)] border border-[var(--color-border)]">
             {data.payments.slice(0, 5).map((p) => (
@@ -181,7 +181,7 @@ export function CreatorOverview({ creatorId }: { creatorId: string }) {
         )}
 
         {data.series.length === 0 ? (
-          <p className="text-sm text-[var(--color-muted)]">No series yet — create one to start.</p>
+          <p className="text-sm text-[var(--color-muted)]">No series yet. Create one to start.</p>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2">
             {data.series.map((s) => {

@@ -42,7 +42,7 @@ export function GuestGate({
         </div>
         <h2 className="font-display mt-4 text-2xl font-semibold">Keep reading on Charon</h2>
         <p className="mx-auto mt-2 max-w-md text-[var(--color-muted)]">
-          The first chapter is free. Sign in to continue <span className="text-[var(--color-ink)]">{seriesTitle}</span> — deposit once and
+          The first chapter is free. Sign in to continue <span className="text-[var(--color-ink)]">{seriesTitle}</span>. Deposit once and
           pay only for what you read, per chapter.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">

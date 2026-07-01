@@ -12,9 +12,9 @@ const garamond = EB_Garamond({ subsets: ["latin"], weight: ["400", "500", "600"]
 const dmMono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-dm-mono" });
 
 export const metadata: Metadata = {
-  title: "Charon — read freely, pay fairly",
+  title: "Charon: read freely, pay honestly",
   description:
-    "A nanopayment reading platform where AI agents settle what every chapter was truly worth. Read webnovels and manga; value flows automatically to creators on Arc.",
+    "A reading app for webnovels and manga. No subscriptions and no coins. You pay only for the chapters you read, and a fair, tiny payment reaches the creator automatically.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

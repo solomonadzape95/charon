@@ -31,19 +31,19 @@ export function StatsBand() {
     return () => clearInterval(t);
   }, []);
 
-  const v = (n: number | undefined, d = "—") => (s ? String(n) : d);
+  const v = (n: number | undefined, d = "·") => (s ? String(n) : d);
 
   return (
     <section className="border-b border-[var(--color-border)]">
       <div className="mx-auto grid max-w-[88rem] grid-cols-2 gap-x-8 gap-y-10 px-6 py-12 md:grid-cols-4 lg:px-10">
-        <Big label="USDC settled on Arc" value={s ? `$${s.totalUsdc.toFixed(2)}` : "—"} accent />
+        <Big label="USDC paid on Arc" value={s ? `$${s.totalUsdc.toFixed(2)}` : "·"} accent />
         <Big label="Chapters paid" value={v(s?.chaptersRead)} />
         <Big label="Creators earning" value={v(s?.earningCreators)} />
         <div className="flex flex-col gap-3">
           <span className="text-utility text-[var(--color-muted)]">Status</span>
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-[var(--color-accent-2)] pulse-dot" />
-            <span className="tabular text-3xl font-medium uppercase md:text-4xl">Live</span>
+            <span className="tabular text-3xl font-medium uppercase md:text-4xl">Beta</span>
           </div>
         </div>
       </div>

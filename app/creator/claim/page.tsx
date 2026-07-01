@@ -112,7 +112,7 @@ export default function CreatorClaim() {
               <>
                 <p className="mt-4 text-sm text-[var(--color-muted)]">
                   Claiming as <span className="font-semibold text-[var(--color-ink)]">{email}</span>. This links the
-                  profile — and all earnings already accrued to it — to your account.
+                  profile, and all earnings already earned by it, to your account.
                 </p>
                 {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
                 <button onClick={claim} disabled={busy} className="btn-coin mt-6 w-full disabled:opacity-50">

@@ -13,8 +13,9 @@ export function LowBalanceGate({ seriesTitle, seriesSlug, chapterTitle }: { seri
         </span>
         <h1 className="font-display text-2xl font-semibold">Your balance is empty</h1>
         <p className="text-sm text-[var(--color-muted)]">
-          “{chapterTitle}” from <span className="text-[var(--color-ink)]">{seriesTitle}</span> is a paid chapter. Top up
-          your reading balance to keep going — you only pay for what you read, and re-reads stay free.
+          “{chapterTitle}” from <span className="text-[var(--color-ink)]">{seriesTitle}</span> is a paid chapter. Add a
+          few dollars and keep reading. There&apos;s no subscription, you just top up whenever. You only pay for what you
+          read, and re-reads stay free.
         </p>
         <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
           <Link href="/wallet" className="btn-coin">

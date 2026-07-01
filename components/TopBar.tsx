@@ -36,8 +36,10 @@ export function TopBar() {
       <nav className="mx-auto flex max-w-[88rem] items-center justify-between px-6 py-4 lg:px-10">
         <Link href="/" className="flex items-center gap-2.5" aria-label="Charon">
           <Logo size={42} className="text-[var(--color-gold)]" />
-          <span className="font-display hidden text-3xl font-semibold tracking-tight text-coin sm:inline">Charon</span>
-          <BetaBadge className="mt-1 self-start" />
+          <span className="hidden flex-col leading-none sm:flex">
+            <span className="font-display text-3xl font-semibold leading-none tracking-tight text-coin">Charon</span>
+            <BetaBadge className="mt-0.5" />
+          </span>
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
           {links.map((l) => (

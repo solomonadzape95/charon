@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Search, Trash2 } from "lucide-react";
 import { Pagination } from "@/components/admin/Pagination";
+import EmptyState from "@/components/EmptyState";
 
 interface Row {
   id: string;
@@ -89,8 +90,8 @@ export default function AdminContent() {
                 <td className="max-w-[14rem] truncate px-4 py-3 font-medium">
                   <Link href={`/series/${s.slug ?? s.id}`} className="hover:text-[var(--color-gold)]">{s.title}</Link>
                 </td>
-                <td className="px-4 py-3 text-[var(--color-muted)]">{s.creatorName ?? "—"}</td>
-                <td className="px-4 py-3 text-[var(--color-muted)]">{s.genre ?? "—"}</td>
+                <td className="px-4 py-3 text-[var(--color-muted)]">{s.creatorName ?? "Unknown"}</td>
+                <td className="px-4 py-3 text-[var(--color-muted)]">{s.genre ?? "Uncategorized"}</td>
                 <td className="tabular px-4 py-3 text-[var(--color-muted)]">{s.chapterCount}</td>
                 <td className="tabular px-4 py-3 text-[var(--color-muted)]">{s.follower_count.toLocaleString()}</td>
                 <td className="px-4 py-3">
@@ -112,7 +113,7 @@ export default function AdminContent() {
             ))}
           </tbody>
         </table>
-        {rows.length === 0 && <p className="px-4 py-6 text-sm text-[var(--color-muted)]">No series found.</p>}
+        {rows.length === 0 && <EmptyState variant="inline" title="No series found" />}
       </div>
 
       <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />

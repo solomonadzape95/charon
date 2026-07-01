@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Pagination } from "@/components/admin/Pagination";
+import EmptyState from "@/components/EmptyState";
 
 interface Row {
   id: string;
@@ -76,8 +77,8 @@ export default function AdminPayments() {
           <tbody>
             {rows.map((p) => (
               <tr key={p.id} className="border-t border-[var(--color-border)] bg-[var(--color-surface)]">
-                <td className="max-w-[14rem] truncate px-4 py-3">{p.chapter ?? "—"}</td>
-                <td className="px-4 py-3 text-[var(--color-muted)]">{p.creator ?? "—"}</td>
+                <td className="max-w-[14rem] truncate px-4 py-3">{p.chapter ?? "Unknown"}</td>
+                <td className="px-4 py-3 text-[var(--color-muted)]">{p.creator ?? "Unknown"}</td>
                 <td className="tabular px-4 py-3 font-semibold text-[var(--color-gold)]">${p.amount.toFixed(2)}</td>
                 <td className="px-4 py-3">
                   <span
@@ -94,14 +95,14 @@ export default function AdminPayments() {
                       ↗
                     </a>
                   ) : (
-                    <span className="text-[var(--color-muted)]">—</span>
+                    <span className="text-[var(--color-muted)]">None</span>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {rows.length === 0 && <p className="px-4 py-6 text-sm text-[var(--color-muted)]">No payments.</p>}
+        {rows.length === 0 && <EmptyState variant="inline" title="No payments yet" />}
       </div>
 
       <Pagination page={page} pageSize={pageSize} total={total} onPage={setPage} />

@@ -3,7 +3,7 @@
 ### Read freely. Pay for what it's worth. Creators earn every chapter.
 
 A nanopayment reading platform for webnovels and manga. Readers deposit USDC once
-and read with no paywalls; when you finish a chapter, Charon settles its current
+and read without hitting a paywall; when you finish a chapter, Charon settles its current
 (engagement-adjusted) price to the creator on **Arc** via **x402** — pay once per
 chapter, re-reads free. You can also hand the reading to an **autonomous agent**
 that learns your taste, holds a weekly budget, and discovers and pays for chapters

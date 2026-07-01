@@ -38,7 +38,7 @@ export default function StudioHome() {
         <p className="text-utility text-[var(--color-gold)]">Creator studio</p>
         <h1 className="font-display display-md mt-2 font-semibold">Your studio</h1>
         <p className="mt-2 max-w-xl text-[var(--color-muted)]">
-          Earnings, audience and series — all in one place. You&apos;re in studio mode, so opening your own chapters here
+          Earnings, audience and series, all in one place. You&apos;re in studio mode, so opening your own chapters here
           is always free.
         </p>
       </header>

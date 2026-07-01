@@ -45,7 +45,7 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
 
   const verify = useCallback(
     async (hash: string, m: "wallet" | "manual") => {
-      setStatus({ kind: "busy", msg: "Verifying on-chain…" });
+      setStatus({ kind: "busy", msg: "Verifying your transfer…" });
       const res = await fetch("/api/deposit/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,7 +127,7 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
         const short = `${account.slice(0, 6)}…${account.slice(-4)}`;
         setStatus({
           kind: "error",
-          msg: `Account ${short} holds ${bal.toFixed(3)} USDC on ${info.network} — not enough for $${amt.toFixed(2)} + gas. Fund this exact account at the faucet, or switch to your funded account in your wallet.`,
+          msg: `Account ${short} holds ${bal.toFixed(3)} USDC on ${info.network}. That's not enough for $${amt.toFixed(2)} plus gas. Fund this exact account at the faucet, or switch to your funded account in your wallet.`,
         });
         return;
       }
@@ -193,8 +193,8 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
           <>
             <AmountField amount={amount} setAmount={setAmount} />
             <p className="text-xs text-[var(--color-muted)]">
-              Connects your wallet on {info?.network ?? "Arc"} and sends ${amt.toFixed(2)} USDC to the treasury — you just
-              confirm. We verify the transfer on-chain before crediting.
+              Connects your wallet on {info?.network ?? "Arc"} and sends ${amt.toFixed(2)} USDC to Charon. You just
+              confirm. We check the transfer before crediting your balance.
             </p>
             <p className="text-xs text-[var(--color-muted)]">
               On Arc, USDC is also the gas token. Need test funds?{" "}
@@ -245,7 +245,7 @@ export function DepositPanel({ userId, onCredited }: { userId: string; onCredite
         {method === "sandbox" && (
           <>
             <p className="text-xs text-[var(--color-muted)]">
-              Instant test credit for the demo — no real funds move. Use Connect wallet or Send manually for real USDC.
+              Instant test credit for the demo. No real funds move. Use Connect wallet or Send manually for real USDC.
             </p>
             <div className="flex flex-wrap gap-2">
               {[3, 5, 10].map((a) => (

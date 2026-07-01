@@ -19,12 +19,12 @@ const PROOF = [
   {
     icon: Globe,
     title: "Paid anywhere on Earth",
-    body: "Instant USDC settlement to any wallet worldwide. No minimums. No conversion delays. Built for creators in Lagos, Jakarta, Manila and São Paulo — every market Patreon and WebNovel left behind.",
+    body: "Get paid instantly in USDC (a digital dollar) to any wallet, anywhere. No minimums. No conversion delays. Built for creators in Lagos, Jakarta, Manila and São Paulo: every market Patreon and WebNovel left behind.",
   },
   {
     icon: Zap,
     title: "Earn in real time",
-    body: "Money moves the moment a reader finishes a chapter — not at the end of the month. Watch it land, chapter by chapter.",
+    body: "Money moves the moment a reader finishes a chapter, not at the end of the month. Watch it land, chapter by chapter.",
   },
   {
     icon: Wallet,
@@ -37,9 +37,9 @@ const PROOF = [
 const COMPARE = {
   cols: ["Charon", "Patreon", "WebNovel", "Royal Road + Patreon"],
   rows: [
-    { label: "Revenue share", values: ["95% — flat", "88–95% − fees", "≈ 30–50%", "Split across two sites"] },
-    { label: "Payout speed", values: ["Instant, per chapter", "Monthly + hold", "Net-30 or worse", "Monthly"] },
-    { label: "Reading experience", values: ["Native reader, no coins", "Posts, not a reader", "Coin-gated paywall", "Free site, paywall offsite"] },
+    { label: "Revenue share", values: ["95%, flat", "88% to 95%, less fees", "About 30% to 50%", "Split across two sites"] },
+    { label: "Payout speed", values: ["Instant, per chapter", "Monthly, after a hold", "Paid 30+ days later", "Monthly"] },
+    { label: "Reading experience", values: ["Built-in reader, no coins", "Posts, not a reader", "Coin-gated paywall", "Free site, paywall offsite"] },
   ],
 };
 
@@ -70,7 +70,7 @@ export default function CreatorLanding() {
           <h1 className="font-display display-lg mt-4 max-w-4xl font-semibold">Upload your series. Get paid the moment it&apos;s read.</h1>
           <p className="mt-6 max-w-2xl text-lg text-[var(--color-muted)]">
             Readers pay per chapter based on how deeply they engage. You earn in real time and withdraw to your bank or wallet
-            with no minimum threshold. No coins, no monthly cycle, no offsite paywall.
+            with no minimum threshold. No coins, no monthly cycle, no sending readers off to another site to pay.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/creator/onboarding" className="btn-coin">
@@ -86,13 +86,13 @@ export default function CreatorLanding() {
       {/* Live earnings ticker */}
       <section className="border-y border-[var(--color-border)] bg-[var(--color-surface)]">
         <div className="mx-auto grid max-w-[88rem] gap-px bg-[var(--color-border)] px-6 py-0 sm:grid-cols-3 lg:px-10">
-          <Stat value={`$${(stats?.totalUsdc ?? 0).toFixed(2)}`} label="USDC settled to creators" accent />
+          <Stat value={`$${(stats?.totalUsdc ?? 0).toFixed(2)}`} label="USDC paid to creators" accent />
           <Stat value={`${stats?.earningCreators ?? 0}`} label="Creators earning now" />
           <Stat value={`${stats?.chaptersRead ?? 0}`} label="Chapters read & paid" />
         </div>
         <div className="mx-auto max-w-[88rem] px-6 py-6 lg:px-10">
           <div className="mb-3 flex items-center gap-2 text-utility text-[var(--color-muted)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent-2)] pulse-dot" /> Live settlements on Arc
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent-2)] pulse-dot" /> Live payouts as they happen
           </div>
           <ul className="space-y-1.5">
             {(stats?.recent ?? []).slice(0, 5).map((r, i) => (
@@ -104,7 +104,7 @@ export default function CreatorLanding() {
               </li>
             ))}
             {!stats?.recent?.length && (
-              <li className="py-2 text-sm text-[var(--color-muted)]">Settlements will appear here as readers read.</li>
+              <li className="py-2 text-sm text-[var(--color-muted)]">Payouts will appear here as readers read.</li>
             )}
           </ul>
         </div>
@@ -117,8 +117,8 @@ export default function CreatorLanding() {
             <p className="text-utility text-[var(--color-gold)]">The fee, in full</p>
             <h2 className="font-display display-md mt-3 font-semibold">We take 5%. You keep 95%. No other fees.</h2>
             <p className="mt-4 max-w-md text-[var(--color-muted)]">
-              No platform tax stacked on processing fees. No coin spread. The only deduction beyond our 5% is the 1.5%
-              Circle conversion fee — and only if you cash out to a bank instead of a wallet.
+              No platform tax stacked on processing fees. No hidden markup on coins. The only other deduction is a 1.5%
+              conversion fee. It applies only if you cash out to a bank instead of a wallet.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-px border border-[var(--color-border)] bg-[var(--color-border)]">

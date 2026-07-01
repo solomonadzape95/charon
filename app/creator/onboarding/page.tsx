@@ -108,7 +108,7 @@ export default function CreatorOnboarding() {
     if (!creatorId) return;
     setError("");
     if (payout === "usdc_wallet" && !/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
-      setError("Enter a valid 0x wallet address on Arc.");
+      setError("Enter a valid wallet address (it starts with 0x).");
       return;
     }
     if (payout === "bank" && (!bankAcct || !bankName)) {
@@ -226,20 +226,20 @@ export default function CreatorOnboarding() {
       {/* Step 1 — profile */}
       {step === 0 && (
         <section className="fade-up flex flex-1 flex-col">
-          <p className="text-utility text-[var(--color-gold)]">Step 1 — Your profile</p>
+          <p className="text-utility text-[var(--color-gold)]">Step 1 · Your profile</p>
           <h1 className="font-display display-md mt-2 font-semibold">Introduce yourself</h1>
           <p className="mt-3 text-[var(--color-muted)]">This is what readers see on your series and author page.</p>
 
           <div className="mt-6 space-y-3">
             <input placeholder="Pen name" value={name} onChange={(e) => setName(e.target.value)} className="charon-input" />
             <textarea
-              placeholder="Short bio — who you are and what you write"
+              placeholder="Short bio: who you are and what you write"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               className="charon-input h-24 resize-none"
             />
             <input
-              placeholder="Genres you write (comma-separated — fantasy, litrpg, manhwa)"
+              placeholder="Genres you write (comma-separated: fantasy, litrpg, manhwa)"
               value={genres}
               onChange={(e) => setGenres(e.target.value)}
               className="charon-input"
@@ -266,10 +266,10 @@ export default function CreatorOnboarding() {
       {/* Step 2 — payout */}
       {step === 1 && (
         <section className="fade-up flex flex-1 flex-col">
-          <p className="text-utility text-[var(--color-gold)]">Step 2 — Get paid</p>
+          <p className="text-utility text-[var(--color-gold)]">Step 2 · Get paid</p>
           <h1 className="font-display display-md mt-2 font-semibold">Where should earnings go?</h1>
           <p className="mt-3 text-[var(--color-muted)]">
-            Required before you publish — you need to be able to receive payment before your work goes live.
+            Required before you publish. You need a way to get paid before your work goes live.
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -278,7 +278,7 @@ export default function CreatorOnboarding() {
               onClick={() => setPayout("usdc_wallet")}
               icon={Wallet}
               title="USDC wallet"
-              sub="Paid instantly on Arc, no fees. Withdraw any amount, any time."
+              sub="Paid instantly, no fees. Withdraw any amount, any time."
               badge="No fee"
             />
             <PayoutTab
@@ -286,7 +286,7 @@ export default function CreatorOnboarding() {
               onClick={() => setPayout("bank")}
               icon={Building2}
               title="Bank account"
-              sub="Cash out to your local bank via Circle. 1.5% conversion fee."
+              sub="Cash out to your local bank. 1.5% conversion fee."
               badge="1.5%"
             />
           </div>
@@ -294,7 +294,7 @@ export default function CreatorOnboarding() {
           <div className="mt-4 space-y-3">
             {payout === "usdc_wallet" ? (
               <input
-                placeholder="0x… wallet address on Arc"
+                placeholder="Wallet address (starts with 0x)"
                 value={wallet}
                 onChange={(e) => setWallet(e.target.value)}
                 className="charon-input font-mono text-sm"
@@ -311,8 +311,7 @@ export default function CreatorOnboarding() {
                 <input placeholder="Account holder name" value={bankName} onChange={(e) => setBankName(e.target.value)} className="charon-input" />
                 <input placeholder="Account number / IBAN" value={bankAcct} onChange={(e) => setBankAcct(e.target.value)} className="charon-input" />
                 <p className="text-xs text-[var(--color-muted)]">
-                  Circle handles the offramp. A 1.5% conversion fee applies on bank withdrawals — disclosed before every
-                  payout.
+                  A 1.5% conversion fee applies to bank withdrawals. We show it before every payout.
                 </p>
               </>
             )}
@@ -333,7 +332,7 @@ export default function CreatorOnboarding() {
       {/* Step 3 — first series + chapter */}
       {step === 2 && (
         <section className="fade-up flex flex-1 flex-col">
-          <p className="text-utility text-[var(--color-gold)]">Step 3 — Your first series</p>
+          <p className="text-utility text-[var(--color-gold)]">Step 3 · Your first series</p>
           <h1 className="font-display display-md mt-2 font-semibold">Upload to get priced</h1>
           <p className="mt-3 text-[var(--color-muted)]">
             Add your series and first chapter. The pricing agent suggests a fair price the moment you submit.
@@ -399,7 +398,7 @@ export default function CreatorOnboarding() {
                   className="charon-input pl-7 text-sm"
                 />
               </div>
-              <span className="text-xs text-[var(--color-muted)]">optional — leave blank to let the agent price it</span>
+              <span className="text-xs text-[var(--color-muted)]">optional: leave blank to let the agent price it</span>
             </div>
             {error && <p className="text-sm text-red-400">{error}</p>}
 
@@ -431,11 +430,11 @@ export default function CreatorOnboarding() {
           </div>
 
           <div className="mt-8">
-            <p className="text-utility text-[var(--color-gold)]">Step 4 — Series Pass (optional)</p>
+            <p className="text-utility text-[var(--color-gold)]">Step 4 · Series Pass (optional)</p>
             <h1 className="font-display display-md mt-2 font-semibold">Offer the whole series for one price?</h1>
             <p className="mt-3 text-[var(--color-muted)]">
-              A Series Pass gives readers permanent access — including future chapters. You can set this now or configure
-              it later in series settings.
+              A Series Pass gives readers permanent access, including future chapters. You can set it now or change it
+              later in series settings.
             </p>
             <div className="mt-5 flex items-center gap-3">
               <div className="relative w-48">
@@ -450,7 +449,7 @@ export default function CreatorOnboarding() {
                 />
               </div>
               <span className="text-xs text-[var(--color-muted)]">
-                ≈ 85% of the expected per-chapter cost — guaranteed up-front instead of hoping readers finish.
+                About 85% of the expected per-chapter cost, paid up front instead of hoping readers finish.
               </span>
             </div>
           </div>

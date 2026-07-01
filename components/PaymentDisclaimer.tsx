@@ -17,12 +17,12 @@ const POINTS = [
   {
     icon: ArrowRightLeft,
     title: "You pay when you leave",
-    body: "The charge settles when you navigate away — not when you open. Never mid-read.",
+    body: "You're charged when you leave a chapter, not when you open it. You'll never see a payment prompt mid-chapter.",
   },
   {
     icon: Coins,
-    title: "It reflects how you read",
-    body: "The amount is informed by how you engaged with the chapter, deducted from your balance.",
+    title: "A few cents per chapter",
+    body: "The amount reflects how much of the chapter you actually read. It comes out of your reading balance automatically.",
   },
   {
     icon: RotateCcw,
@@ -31,8 +31,8 @@ const POINTS = [
   },
   {
     icon: ShieldCheck,
-    title: "No surprises",
-    body: "The first three chapters of any series are free. You always see a price before you start.",
+    title: "The first chapter is free",
+    body: "Chapter one of every series is free, so you can try a story before you pay anything.",
   },
 ];
 
@@ -77,7 +77,7 @@ export function PaymentDisclaimer({ theme, enabled }: { theme: ReaderTheme; enab
           <h2 className="font-display text-2xl font-semibold">How Charon charges you</h2>
         </div>
         <p className="mt-2 text-sm" style={{ color: theme.chrome }}>
-          One coin per crossing. Here&apos;s exactly how reading is paid for — you&apos;ll only see this once.
+          Here&apos;s exactly how you pay to read. No coins, no subscription. You&apos;ll only see this once.
         </p>
 
         <ul className="mt-5 space-y-3.5">
@@ -104,7 +104,7 @@ export function PaymentDisclaimer({ theme, enabled }: { theme: ReaderTheme; enab
           className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-full py-3 text-utility font-semibold text-black transition-[filter] hover:brightness-110"
           style={{ background: "linear-gradient(180deg, var(--color-gold-soft), var(--color-gold))" }}
         >
-          Got it — start reading
+          Got it, start reading
         </button>
       </div>
     </div>

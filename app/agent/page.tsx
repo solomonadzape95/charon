@@ -144,9 +144,9 @@ function AgentOnboarding({
       <div className="border border-border bg-surface p-5">
         <p className="text-sm leading-relaxed text-muted">
           Hey. Before I start finding things for you, I want to understand what
-          you actually like. Tell me a few series you&apos;ve loved — anywhere,
-          Webtoon, Royal Road, anything — and what kills the mood for you.
-          I&apos;ll work within a weekly budget, pay creators per chapter on
+          you like. Tell me a few series you&apos;ve loved. From anywhere:
+          Webtoon, Royal Road, anything. Also tell me what kills the mood for
+          you. I&apos;ll work within a weekly budget, pay creators per chapter on
           Arc, and stop the moment something isn&apos;t worth it.
         </p>
       </div>
@@ -165,7 +165,7 @@ function AgentOnboarding({
 
       <div className="space-y-2">
         <label className="text-utility text-muted">
-          Instant drops — what to avoid
+          Instant drops: what to avoid
         </label>
         <textarea
           value={avoids}
@@ -192,8 +192,8 @@ function AgentOnboarding({
           className="w-full accent-(--color-gold)"
         />
         <p className="text-xs text-muted">
-          ≈ {estLow}–{estHigh} chapters/week. Unspent budget stays in your
-          balance.
+          About {estLow} to {estHigh} chapters a week. Unspent budget stays in
+          your balance.
         </p>
       </div>
 
@@ -395,7 +395,7 @@ function AgentConsole({
       >
         {feed.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted">
-            No activity yet — hit “Run now” and watch.
+            No activity yet. Hit “Run now” and watch.
           </p>
         ) : (
           feed.map((m) => <FeedItem key={m.id} m={m} />)
@@ -413,7 +413,7 @@ function AgentConsole({
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Message your agent — “what are you reading?”"
+          placeholder="Message your agent: “what are you reading?”"
           className="charon-input flex-1"
         />
         <button
