@@ -25,6 +25,37 @@ export function SessionBridge() {
   const pathname = usePathname();
   const router = useRouter();
 
+  // Self-heal an OAuth redirect that landed on a client page with `?code=…`
+  // instead of /auth/callback (e.g. Supabase Redirect URLs not allowlisted, so it
+  // fell back to the Site URL). The browser client auto-exchanges the code and
+  // sets the session; here we just wait for it, sync, and route to the app —
+  // instead of leaving the user stranded on the landing page.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.pathname === "/auth/callback") return; // the real callback handles itself
+    if (!new URLSearchParams(window.location.search).has("code")) return;
+
+    const supabase = supabaseBrowser();
+    let cancelled = false;
+    (async () => {
+      for (let i = 0; i < 12 && !cancelled; i++) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          const d = await syncSession();
+          // router.replace to a clean path drops the ?code from the URL.
+          router.replace(d?.created ? "/onboarding" : "/dashboard");
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 150));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   useEffect(() => {
     const supabase = supabaseBrowser();
 
