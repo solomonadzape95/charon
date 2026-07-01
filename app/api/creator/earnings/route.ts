@@ -22,6 +22,19 @@ export async function GET(req: NextRequest) {
     getCreatorBalances(creatorId),
   ]);
 
+  // Tips are the only settled payments with no chapter (a tip is not a chapter
+  // purchase). Sum them all-time so the dashboard can show a real Tips stat.
+  const { data: tipRows } = await supabaseService()
+    .from("payments")
+    .select("net_usdc")
+    .eq("creator_id", creatorId)
+    .eq("status", "settled")
+    .is("chapter_id", null);
+  const tips = {
+    total: (tipRows ?? []).reduce((s, r) => s + Number((r as { net_usdc: number | null }).net_usdc ?? 0), 0),
+    count: tipRows?.length ?? 0,
+  };
+
   // Resolve chapter titles for recent payments.
   const chapterIds = [...new Set(payments.map((p) => p.chapter_id).filter(Boolean))] as string[];
   const titles: Record<string, string> = {};
@@ -47,6 +60,7 @@ export async function GET(req: NextRequest) {
       wallet_address: creator.wallet_address,
     },
     balances,
+    tips,
     series: series.map((s) => ({ id: s.id, slug: s.slug, title: s.title, status: s.status, cover_image: s.cover_image })),
     payments: payments
       .filter((p) => p.status === "settled")

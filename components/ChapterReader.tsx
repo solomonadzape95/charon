@@ -9,6 +9,7 @@ import { PaymentDisclaimer } from "@/components/PaymentDisclaimer";
 import { TipJar } from "@/components/TipJar";
 import { saveProgress, getChapterPct, isBookmarked, toggleBookmark } from "@/lib/reading";
 import { isHtmlContent, toReaderHtml } from "@/lib/chapter-html";
+import { getTheme } from "@/lib/theme";
 
 interface Props {
   chapterId: string;
@@ -45,11 +46,17 @@ interface Prefs {
 }
 const DEFAULT_PREFS: Prefs = { theme: "sepia", font: "serif", size: 19, leading: 1.85 };
 
+// Palettes mirror the main app's themes exactly (see app/globals.css):
+//   paper = app "light", sepia = app "sepia", dark = app "dark".
+// fg = --color-ink, chrome = --color-muted, line = --color-border, surface = --color-surface.
 const THEMES: Record<ReadTheme, { bg: string; fg: string; chrome: string; line: string; surface: string }> = {
-  paper: { bg: "#faf8f2", fg: "#1c1a16", chrome: "#736d63", line: "#e7e2d6", surface: "#ffffff" },
-  sepia: { bg: "#f3ead6", fg: "#433726", chrome: "#8a7b5c", line: "#e0d4b8", surface: "#f7efdd" },
-  dark: { bg: "#0d0d0d", fg: "#d9d5cd", chrome: "#8d877a", line: "#242424", surface: "#161616" },
+  paper: { bg: "#faf8f4", fg: "#16130e", chrome: "#595349", line: "#e3ded3", surface: "#ffffff" },
+  sepia: { bg: "#ece2cf", fg: "#382f20", chrome: "#6f6044", line: "#d7caa7", surface: "#f4ecda" },
+  dark: { bg: "#0a0a0a", fg: "#f5f3ee", chrome: "#aaa498", line: "#2b2b2b", surface: "#121212" },
 };
+
+// Map the app's global theme to the matching reader theme.
+const APP_TO_READ: Record<string, ReadTheme> = { light: "paper", sepia: "sepia", dark: "dark" };
 const FONTS: Record<ReadFont, string> = {
   serif: "var(--font-garamond), Georgia, 'Times New Roman', serif",
   sans: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
@@ -101,14 +108,19 @@ export function ChapterReader(props: Props) {
   const theme = THEMES[prefs.theme];
   const navStyle = { "--nav": theme.chrome } as React.CSSProperties;
 
-  // Load saved reading preferences.
+  // Load saved reading preferences (font / size / spacing). The theme always
+  // defaults to the app's current theme so the reader matches the rest of the
+  // app; the reader's own picker can still switch it while reading.
   useEffect(() => {
+    let saved: Partial<Prefs> = {};
     try {
       const raw = localStorage.getItem(PREFS_KEY);
-      if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) });
+      if (raw) saved = JSON.parse(raw) as Partial<Prefs>;
     } catch {
       /* ignore */
     }
+    const appTheme = APP_TO_READ[getTheme()] ?? DEFAULT_PREFS.theme;
+    setPrefs({ ...DEFAULT_PREFS, ...saved, theme: appTheme });
   }, []);
 
   const updatePrefs = useCallback((patch: Partial<Prefs>) => {
@@ -582,7 +594,8 @@ function ReaderSettings({
               <button
                 key={t}
                 onClick={() => update({ theme: t })}
-                aria-label={t}
+                aria-label={t === "paper" ? "Light" : t === "sepia" ? "Sepia" : "Dark"}
+                title={t === "paper" ? "Light" : t === "sepia" ? "Sepia" : "Dark"}
                 className="h-8 w-8 rounded-full"
                 style={{
                   background: THEMES[t].bg,

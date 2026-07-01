@@ -10,6 +10,7 @@ import { StudioSkeleton } from "@/components/Skeletons";
 
 interface Earnings {
   creator: { id: string; name: string | null; balance_usd: number; total_earned_usdc: number; wallet_address: string | null };
+  tips: { total: number; count: number };
   series: { id: string; slug: string | null; title: string; status: string; cover_image: string | null }[];
   payments: { id: string; amount: number; chapter: string | null; tx: string | null; created_at: string }[];
 }
@@ -119,10 +120,11 @@ export function CreatorOverview({ creatorId }: { creatorId: string }) {
           <Sparkline payments={data.payments} />
         </div>
 
-        <div className="grid grid-cols-3 bg-[var(--color-surface)]">
+        <div className="grid grid-cols-2 gap-px bg-[var(--color-border)]">
           <Metric label="Today" value={today} />
-          <Metric label="This week" value={week} bordered />
+          <Metric label="This week" value={week} />
           <Metric label="This month" value={month} />
+          <Metric label={`Tips${data.tips.count ? ` · ${data.tips.count}` : ""}`} value={data.tips.total} accent />
         </div>
       </section>
 
@@ -225,11 +227,11 @@ export function CreatorOverview({ creatorId }: { creatorId: string }) {
   );
 }
 
-function Metric({ label, value, bordered }: { label: string; value: number; bordered?: boolean }) {
+function Metric({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
-    <div className={`px-5 py-6 ${bordered ? "border-x border-[var(--color-border)]" : ""}`}>
+    <div className="bg-[var(--color-surface)] px-5 py-6">
       <p className="text-utility text-[var(--color-muted)]">{label}</p>
-      <p className="tabular mt-2 text-2xl font-semibold">${value.toFixed(2)}</p>
+      <p className={`tabular mt-2 text-2xl font-semibold ${accent ? "text-[var(--color-gold)]" : ""}`}>${value.toFixed(2)}</p>
     </div>
   );
 }
