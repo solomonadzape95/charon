@@ -48,10 +48,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "you can't tip your own series" }, { status: 400 });
   }
 
+  // NB: no chapterId — a tip is not a chapter purchase. Tagging the tip with the
+  // chapter would make hasPaidForChapter() treat the chapter as already bought,
+  // so the actual read would settle as a free "re-read". Tips stay independent.
   const payment = await recordPayment({
     userId,
     creatorId: creator.id,
-    chapterId,
     amountUsdc: amount,
     feeUsdc: 0,
     netUsdc: amount,

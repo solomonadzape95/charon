@@ -632,7 +632,7 @@ export async function recordPayment(input: {
   sessionId?: string | null;
   userId: string;
   creatorId: string;
-  chapterId: string;
+  chapterId?: string | null; // null for tips — a tip is not a chapter purchase
   amountUsdc: number; // gross (reader-paid)
   feeUsdc?: number; // platform cut
   netUsdc?: number; // creator net
@@ -647,7 +647,7 @@ export async function recordPayment(input: {
       session_id: input.sessionId ?? null,
       user_id: input.userId,
       creator_id: input.creatorId,
-      chapter_id: input.chapterId,
+      chapter_id: input.chapterId ?? null,
       amount_usdc: input.amountUsdc,
       fee_usdc: input.feeUsdc ?? 0,
       net_usdc: input.netUsdc ?? input.amountUsdc,
